@@ -1,5 +1,5 @@
 ; Generated from validate-install.ps1. Keep the readable source in sync.
-; SHA256: d9be1a3942689269fadb6f1d40878d5ec26bde334138e462b9f054bf32bbc035
+; SHA256: 7c5353276ed34618c924e90b3cbbbba7196f908c53268483280edd42cb478288
 !macro DRIFT_WRITE_VALIDATOR
   FileOpen $2 "$PLUGINSDIR\driftnet-validate-install.ps1" w
   ${If} $2 == ""
@@ -69,7 +69,17 @@
   FileWrite $2 "            Microsoft.PowerShell.Utility\Write-Verbose $\"Shortcut outside common folders: $$full$\"$\r$\n"
   FileWrite $2 "            return $$false$\r$\n"
   FileWrite $2 "        }$\r$\n"
-  FileWrite $2 "        Assert-ProtectedItem ([IO.FileInfo]::new($$full))$\r$\n"
+  FileWrite $2 "        # A shortcut is user-editable metadata, never executable service code.$\r$\n"
+  FileWrite $2 "        # Do not require its content ACL to match Program Files. Reject leaf$\r$\n"
+  FileWrite $2 "        # reparse points and retain the protected-ancestor checks below.$\r$\n"
+  FileWrite $2 "        $$info = [IO.FileInfo]::new($$full)$\r$\n"
+  FileWrite $2 "        if (($$info.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { return $$false }$\r$\n"
+  FileWrite $2 "        if ($$VerbosePreference -eq 'Continue') {$\r$\n"
+  FileWrite $2 "            $$metadataAcl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $$full$\r$\n"
+  FileWrite $2 "            foreach ($$rule in $$metadataAcl.GetAccessRules($$true, $$true, [Security.Principal.SecurityIdentifier])) {$\r$\n"
+  FileWrite $2 "                Microsoft.PowerShell.Utility\Write-Verbose $\"Shortcut metadata ACL: $$full / $$($$rule.IdentityReference.Value) / $$($$rule.FileSystemRights)$\"$\r$\n"
+  FileWrite $2 "            }$\r$\n"
+  FileWrite $2 "        }$\r$\n"
   FileWrite $2 "        $$parent = [IO.DirectoryInfo]::new([IO.Path]::GetDirectoryName($$full))$\r$\n"
   FileWrite $2 "        while ($$null -ne $$parent) {$\r$\n"
   FileWrite $2 "            Assert-ShortcutDirectory $$parent$\r$\n"

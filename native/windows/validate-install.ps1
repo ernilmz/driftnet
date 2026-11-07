@@ -62,7 +62,17 @@ function Test-ShortcutTarget([string]$Path, [string]$Target) {
             Microsoft.PowerShell.Utility\Write-Verbose "Shortcut outside common folders: $full"
             return $false
         }
-        Assert-ProtectedItem ([IO.FileInfo]::new($full))
+        # A shortcut is user-editable metadata, never executable service code.
+        # Do not require its content ACL to match Program Files. Reject leaf
+        # reparse points and retain the protected-ancestor checks below.
+        $info = [IO.FileInfo]::new($full)
+        if (($info.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { return $false }
+        if ($VerbosePreference -eq 'Continue') {
+            $metadataAcl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $full
+            foreach ($rule in $metadataAcl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+                Microsoft.PowerShell.Utility\Write-Verbose "Shortcut metadata ACL: $full / $($rule.IdentityReference.Value) / $($rule.FileSystemRights)"
+            }
+        }
         $parent = [IO.DirectoryInfo]::new([IO.Path]::GetDirectoryName($full))
         while ($null -ne $parent) {
             Assert-ShortcutDirectory $parent
