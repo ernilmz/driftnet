@@ -9,9 +9,36 @@
 A menu bar and tray app for local, selective access.
 A quiet amber interface, your own rules, and no remote VPN account.
 
-[Install](#install) · [How it works](#how-it-works) · [Updates](#updates) · [Build](#build-from-source) · [Contribute](CONTRIBUTING.md)
+[Download](#download) · [How it works](#how-it-works) · [Updates](#updates) · [Build](#build-from-source) · [Contribute](CONTRIBUTING.md)
 
 </div>
+
+## Download
+
+### [↓ Download for Windows](https://github.com/ernilmz/driftnet/releases/download/v1.0.1/Driftnet-1.0.1-Setup.exe)
+
+Windows 10 / 11 · Intel or AMD 64-bit · `.exe` installer
+
+### [↓ Download for Mac](https://github.com/ernilmz/driftnet/releases/download/v1.0.1/Driftnet-1.0.1-macOS.pkg)
+
+macOS 13 or later · Apple Silicon (M-series) · `.pkg` installer
+
+### [↓ Download for Linux](https://github.com/ernilmz/driftnet/releases/download/v1.0.1/Driftnet-1.0.1-linux-amd64.deb)
+
+Ubuntu 24.04 or later · Intel or AMD 64-bit · `.deb` installer · GNOME for website rules
+
+Download one installer for your computer. Install it, open **Driftnet**, and turn
+**Access** on. The app and networking helper are included together.
+
+<details>
+<summary>Source, signatures and other release files</summary>
+
+The `.sig` files, `latest.json` and checksums support automatic updates and
+verification. You do not need to download them to install Driftnet.
+The router source archive is for developers. Find these files and the version
+history in [Releases](https://github.com/ernilmz/driftnet/releases).
+
+</details>
 
 ## What it does
 
@@ -30,15 +57,9 @@ website or connection will work on every network.
 
 ## Install
 
-Use a package attached to [Releases](https://github.com/ernilmz/driftnet/releases).
-Choose the installer for your system and architecture. The app and its networking
-helper are distributed together; the corresponding router source accompanies them.
-
-| Platform | Package | Scope |
-| --- | --- | --- |
-| macOS 13+ | Combined `.pkg` | App and LaunchDaemon helper in one installer. Apple Silicon is the locally built target. This backend does not require Apple Developer membership. |
-| Windows 10/11 x64 | `Setup.exe` | App, routing service, Wintun, and WebView2 handling in one installer. |
-| Ubuntu 24.04+ | `.deb` | Native app, engine, and systemd helper. GNOME is the supported desktop for website rules. |
+Use the [direct downloads above](#download). Each installer includes the app and
+its networking helper. The macOS backend does not require Apple Developer membership;
+Windows setup handles WebView2, and the Linux package installs the systemd service.
 
 Install once, approve the operating system's normal administrator request, and
 open Driftnet. Click **d_** in the macOS menu bar, or the Driftnet tray icon on
