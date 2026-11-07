@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Microsoft/go-winio"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
@@ -86,6 +87,13 @@ func platformCommand() (bool, error) {
 	}
 	mode := os.Args[1]
 	if mode == "--service" {
+		exe, err := os.Executable()
+		if err != nil {
+			return true, err
+		}
+		if err := validateWindowsServiceExecutable(exe); err != nil {
+			return true, err
+		}
 		return true, svc.Run(serviceName, serviceHandler{})
 	}
 	if mode != "--install-service" && mode != "--uninstall-service" {
@@ -93,7 +101,7 @@ func platformCommand() (bool, error) {
 	}
 	manager, err := mgr.Connect()
 	if err != nil {
-		return true, err
+		return true, fmt.Errorf("open service manager: %w", err)
 	}
 	defer manager.Disconnect()
 	service, err := manager.OpenService(serviceName)
@@ -118,13 +126,16 @@ func platformCommand() (bool, error) {
 	}
 	exe, err := os.Executable()
 	if err != nil {
-		return true, err
+		return true, fmt.Errorf("resolve service executable: %w", err)
 	}
 	exe, err = filepath.Abs(exe)
 	if err != nil {
 		return true, err
 	}
-	config := mgr.Config{DisplayName: "Drift Networking", Description: "Routes only applications selected in Drift; other connections are direct.", StartType: mgr.StartAutomatic, ErrorControl: mgr.ErrorNormal}
+	if err := validateWindowsServiceExecutable(exe); err != nil {
+		return true, err
+	}
+	config := mgr.Config{DisplayName: "Driftnet Networking", Description: "Routes only applications selected in Driftnet; other connections are direct.", ServiceType: windows.SERVICE_WIN32_OWN_PROCESS, StartType: mgr.StartAutomatic, ErrorControl: mgr.ErrorNormal}
 	if service == nil {
 		service, err = manager.CreateService(serviceName, exe, config, "--service")
 	} else {
@@ -132,23 +143,26 @@ func platformCommand() (bool, error) {
 		err = service.UpdateConfig(config)
 	}
 	if err != nil {
-		return true, err
+		return true, fmt.Errorf("create or update networking service: %w", err)
 	}
 	defer service.Close()
 	if err = service.SetRecoveryActions([]mgr.RecoveryAction{{Type: mgr.ServiceRestart, Delay: 3 * time.Second}}, 86400); err != nil {
-		return true, err
+		return true, fmt.Errorf("configure service recovery: %w", err)
 	}
 	_ = service.SetRecoveryActionsOnNonCrashFailures(true)
 	err = service.Start()
 	if err != nil && err != windows.ERROR_SERVICE_ALREADY_RUNNING {
-		return true, err
+		return true, fmt.Errorf("start networking service: %w", err)
 	}
 	timeout := 10 * time.Second
 	pipe, err := winio.DialPipe(`\\.\pipe\Drift.Network`, &timeout)
 	if err == nil {
 		_ = pipe.Close()
 	}
-	return true, err
+	if err != nil {
+		return true, fmt.Errorf("connect networking service pipe: %w", err)
+	}
+	return true, nil
 }
 
 func watchApplication(_ context.Context, _ context.CancelFunc) {}

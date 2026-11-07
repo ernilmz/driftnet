@@ -1,1 +1,10 @@
-{"identifier":"main","description":"Only the local Drift panel","windows":["main"],"permissions":["core:default"]}
+{
+  "identifier": "main",
+  "description": "Only the local Driftnet panel",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default"
+  ]
+}

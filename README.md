@@ -66,9 +66,8 @@ The Discord preset appears under both tabs because it covers the app and its web
 services. Disable or remove it to use Driftnet only with your own rules. Closing
 and reopening a selected app does not require toggling Access.
 
-Turn Access off or choose **Quit Driftnet** to end the session. The macOS and Windows
-tray menus include **Uninstall Driftnet…** for removal of the app and helper. On
-Linux, remove the `driftnet` package through the package manager. In-place updates
+Turn Access off or choose **Quit Driftnet** to end the session. The
+tray menus include **Uninstall Driftnet…** for removal of the app and helper. The Linux tray also provides **Open Driftnet**; its package manager can remove the app too. In-place updates
 retain the stable application identity and rules stored outside the install directory.
 
 ## How it works
@@ -219,3 +218,18 @@ helper cross-builds are separate from native desktop and device acceptance.
 See [third-party notices](THIRD_PARTY_NOTICES.md), [router integration](native/router/README.md),
 and the notices packaged with the app. Driftnet is not affiliated with Discord,
 SagerNet, WireGuard, or the websites and apps selected by users.
+
+## Credits
+
+Driftnet combines its own interface and policy with pinned, attributed components:
+[Tauri](https://github.com/tauri-apps/tauri),
+[sing-box](https://github.com/SagerNet/sing-box),
+[ByeDPI](https://github.com/hufrea/byedpi),
+[Phosphor](https://github.com/phosphor-icons/react), and
+[IBM Plex](https://github.com/IBM/plex).
+The native **About Driftnet** dialog shows the version and component credits.
+Full license texts and provenance are included with the installers; each component
+retains its own license.
+
+See [Security](SECURITY.md) and the [security review](docs/SECURITY-REVIEW.md)
+for the trust model, concrete findings, mitigations and verification limits.

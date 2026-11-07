@@ -416,7 +416,8 @@ FunctionEnd
 
 ; 5. Choose install directory page
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
-!insertmacro MUI_PAGE_DIRECTORY
+; Privileged helpers require the fixed, protected Program Files location.
+; Keep RestorePreviousInstallLocation for safe, already-shipped Drift upgrades.
 
 ; 6. Start menu shortcut page
 Var AppStartMenuFolder

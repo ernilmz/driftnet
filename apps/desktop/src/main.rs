@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::{path::PathBuf, sync::Mutex};
 use tauri::{
     Manager, State,
-    menu::{Menu, MenuItem},
+    menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 use uuid::Uuid;
@@ -375,8 +375,12 @@ fn set_panel_view(settings: bool, window: tauri::WebviewWindow) -> Result<(), St
     panel::position(&window)
 }
 #[tauri::command]
-fn hide_panel(window: tauri::WebviewWindow) -> Result<(), String> {
-    window.hide().map_err(|e| e.to_string())
+fn hide_panel(window: tauri::WebviewWindow) {
+    panel::hide(&window);
+}
+#[tauri::command]
+fn panel_ready(app: tauri::AppHandle) {
+    panel::ready(&app);
 }
 fn open_uninstaller(app: &tauri::AppHandle) -> Result<(), String> {
     #[cfg(target_os = "macos")]
@@ -506,6 +510,18 @@ fn main() {
             update::start_background(app.handle().clone());
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            let about = PredefinedMenuItem::about(app, Some("About Driftnet"), Some(AboutMetadata {
+                name: Some("Driftnet".into()),
+                version: Some(env!("CARGO_PKG_VERSION").into()),
+                copyright: Some("© 2026 Driftnet contributors".into()),
+                comments: Some("Local routing for selected apps and websites. Built with Tauri, Rust, sing-box and ByeDPI.".into()),
+                license: Some("Driftnet UI/control: MIT. Router: GPL-3.0-or-later. Engine: MIT. Font: OFL-1.1. Full notices accompany the installer.".into()),
+                website: Some("https://github.com/ernilmz/driftnet".into()),
+                website_label: Some("Source and documentation".into()),
+                credits: Some("Local routing for selected apps and websites.\n\nBuilt with Tauri, Rust, sing-box and ByeDPI.\nDriftnet UI/control: MIT · Router: GPL-3.0-or-later\nEngine: MIT · IBM Plex Mono: OFL-1.1\n\nSource and documentation:\nhttps://github.com/ernilmz/driftnet\n\nFull notices accompany the installer.\nNot affiliated with Discord or upstream projects.".into()),
+                icon: app.default_window_icon().cloned(),
+                ..Default::default()
+            }))?;
             let quit = MenuItem::with_id(app, "quit", "Quit Driftnet", true, None::<&str>)?;
             let uninstall =
                 MenuItem::with_id(app, "uninstall", "Uninstall Driftnet…", true, None::<&str>)?;
@@ -514,9 +530,9 @@ fn main() {
             #[cfg(target_os = "linux")]
             let open = MenuItem::with_id(app, "open", "Open Driftnet", true, None::<&str>)?;
             #[cfg(target_os = "linux")]
-            let menu = Menu::with_items(app, &[&open, &update_menu, &uninstall, &quit])?;
+            let menu = Menu::with_items(app, &[&open, &about, &update_menu, &uninstall, &quit])?;
             #[cfg(not(target_os = "linux"))]
-            let menu = Menu::with_items(app, &[&update_menu, &uninstall, &quit])?;
+            let menu = Menu::with_items(app, &[&about, &update_menu, &uninstall, &quit])?;
             let mut tray = TrayIconBuilder::with_id("drift-tray")
                 .tooltip("Driftnet")
                 .menu(&menu)
@@ -582,9 +598,10 @@ fn main() {
                             .hidden_at
                             .lock()
                             .unwrap()
+                            .take()
                             .is_some_and(|t| t.elapsed() < std::time::Duration::from_millis(250));
-                        if (w.is_visible().unwrap_or(false) || just_hidden) && same_anchor {
-                            let _ = w.hide();
+                        if (panel::is_open(tray.app_handle()) || just_hidden) && same_anchor {
+                            panel::hide(&w);
                         } else {
                             panel::show(tray.app_handle());
                         }
@@ -634,18 +651,15 @@ fn main() {
                     }
                     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                         api.prevent_close();
-                        let _ = window.hide();
+                        panel::hide(&window);
                     }
                     if let tauri::WindowEvent::Focused(false) = event {
                         let state = window.app_handle().state::<panel::PanelState>();
-                        if !state.picking.load(std::sync::atomic::Ordering::Relaxed)
+                        if panel::is_open(window.app_handle()) && !state.picking.load(std::sync::atomic::Ordering::Relaxed)
                             && window.is_visible().unwrap_or(false)
                             && !window.is_focused().unwrap_or(true)
                         {
-                            if let Ok(mut at) = state.hidden_at.lock() {
-                                *at = Some(std::time::Instant::now());
-                            }
-                            let _ = window.hide();
+                            panel::hide_on_blur(&window);
                         }
                     }
                 });
@@ -661,6 +675,7 @@ fn main() {
             pick_app,
             set_panel_view,
             hide_panel,
+            panel_ready,
             update::update_status,
             update::check_for_updates,
             install_update

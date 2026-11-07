@@ -54,12 +54,20 @@ type Reply struct {
 	Error    string `json:"error,omitempty"`
 }
 
-func answer(w io.Writer, router bool, err error) {
+// Never let an IPC peer pin a privileged worker or the session mutex by
+// sending a request whose error is larger than its unread socket buffer.
+func writeJSON(w io.Writer, value any) error {
+	if conn, ok := w.(net.Conn); ok {
+		_ = conn.SetWriteDeadline(time.Now().Add(8 * time.Second))
+	}
+	return json.NewEncoder(w).Encode(value)
+}
+func answer(w io.Writer, router bool, err error) error {
 	r := Reply{OK: err == nil, Protocol: 2, Router: router}
 	if err != nil {
 		r.Error = err.Error()
 	}
-	_ = json.NewEncoder(w).Encode(r)
+	return writeJSON(w, r)
 }
 func appPatterns(apps []App) ([]string, error) {
 	if len(apps) > 128 {
@@ -224,7 +232,7 @@ func handle(ctx context.Context, conn net.Conn) {
 		return
 	}
 	if request.Action == "stats" {
-		_ = json.NewEncoder(conn).Encode(process.DriftStats(owner))
+		_ = writeJSON(conn, process.DriftStats(owner))
 		return
 	}
 	if !sessionLock.TryLock() {
@@ -296,7 +304,9 @@ func handle(ctx context.Context, conn net.Conn) {
 		}
 		defer restoreProxy(request.URL)
 	}
-	answer(conn, router != nil, nil)
+	if err := answer(conn, router != nil, nil); err != nil {
+		return
+	}
 	<-sessionCtx.Done()
 	// Explicit teardown before acknowledging stop. No listener survives the lease.
 	if request.URL != "" {

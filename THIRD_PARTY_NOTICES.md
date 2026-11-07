@@ -33,3 +33,12 @@ data loss under TCP backpressure. The patch and upstream notices ship in resourc
 
 `native/router` is GPL-3.0-or-later; its license is `native/router/LICENSE`.
 This does not relicense third-party code under the root MIT license.
+
+- gtk-rs `glib` 0.18.5: MIT, exact upstream pointer-mutability security backport
+  for `VariantStrIter` (upstream PR 1343 / RUSTSEC-2024-0429). The patch, original
+  crate digest and per-file hashes are documented in `vendor/glib/DRIFTNET_PATCH.json`
+  and `native/patches`; `scripts/verify-glib-patch.py` verifies original and patched
+  bytes. Original copyright and license are preserved in `vendor/glib/LICENSE`.
+  The pinned path package is `0.18.5+driftnet.1`; it does not imply a GTK major upgrade.
+- The Windows NSIS template is a pinned, minimally modified Tauri MIT template;
+  provenance and its license are under `native/windows` and ship with Windows.

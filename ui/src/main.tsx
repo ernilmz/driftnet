@@ -110,6 +110,9 @@ function RuleIcon({ rule, icon }: { rule: Rule; icon?: string }) {
   );
 }
 function App() {
+  useEffect(() => {
+    if (native) invoke("panel_ready").catch(() => {});
+  }, []);
   const [config, setConfig] = useState<Config>(
     native ? defaultConfig : previewConfig,
   );

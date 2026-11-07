@@ -1,6 +1,7 @@
 [workspace]
 members = ["crates/drift-core", "crates/drift-engine", "crates/drift-policy-ffi", "crates/drift-network", "crates/drift-agent", "apps/desktop"]
 resolver = "2"
+exclude = ["vendor/glib"]
 
 [workspace.package]
 version = "1.0.0"
@@ -14,3 +15,7 @@ url = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 tempfile = "3"
 thiserror = "2"
+
+[patch.crates-io]
+# Exact upstream VariantStrIter safety fix for the GTK3-compatible release.
+glib = { path = "vendor/glib" }

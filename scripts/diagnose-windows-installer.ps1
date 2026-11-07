@@ -1,9 +1,11 @@
+param([bool]$UseRebuiltRouter = $false)
 # Private, disposable-runner diagnostics. Never run on an end user's machine.
 $ErrorActionPreference = 'Stop'
 if (-not $IsWindows -or $env:GITHUB_ACTIONS -ne 'true') { throw 'Disposable Windows CI only' }
 $output = Join-Path $PSScriptRoot '../target/windows-diagnostics'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
-$install = Join-Path $env:RUNNER_TEMP ('DriftnetDiagnostic-' + [guid]::NewGuid().ToString('N'))
+$install = Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'Drift'
+if (Test-Path $install) { throw 'Refusing to touch a pre-existing installation directory' }
 $packages = @(Get-ChildItem (Join-Path $PSScriptRoot '../target/diagnostic-input') -Recurse -Filter '*-setup.exe')
 if ($packages.Count -ne 1) { throw 'Expected exactly one authenticated workflow installer artifact' }
 if (Get-Service DriftNetwork -ErrorAction SilentlyContinue) { throw 'Refusing to touch a pre-existing service' }
@@ -20,6 +22,15 @@ try {
     if (Test-Path $install) { $report.files = @(Get-ChildItem $install -Recurse -File | ForEach-Object { $_.FullName.Substring($install.Length + 1) }) }
     Snapshot-Service 'service-after-installer'
     $router = Join-Path $install 'drift-router.exe'
+    if ($UseRebuiltRouter) {
+        $service = Get-Service DriftNetwork -ErrorAction SilentlyContinue
+        if ($null -ne $service) {
+            try { $service.Stop(); $service.WaitForStatus('Stopped', [TimeSpan]::FromSeconds(25)) } finally { $service.Dispose() }
+            & sc.exe delete DriftNetwork | Out-Null
+            Start-Sleep -Seconds 1
+        }
+        Copy-Item (Join-Path $PSScriptRoot '../apps/desktop/binaries/drift-router-x86_64-pc-windows-msvc.exe') $router -Force
+    }
     if (Test-Path $router) {
         $p = Start-Process $router -ArgumentList '--install-service' -PassThru `
             -RedirectStandardOutput (Join-Path $output 'router-install.stdout.txt') `

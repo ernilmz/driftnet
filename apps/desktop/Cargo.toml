@@ -3,6 +3,8 @@ name = "drift-desktop"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Local routing for selected apps and websites."
+homepage = "https://github.com/ernilmz/driftnet"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

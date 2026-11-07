@@ -6,6 +6,10 @@ on:
         description: Private workflow run containing Driftnet-Windows-native
         required: true
         default: '42367749112'
+      rebuild_router:
+        description: Rebuild only the router to diagnose corrected native code
+        type: boolean
+        default: true
 permissions:
   contents: read
   actions: read
@@ -15,6 +19,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        if: inputs.rebuild_router
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: vendor/sing-box/go.sum
+      - name: Build current native router only
+        if: inputs.rebuild_router
+        run: python scripts/build-router.py --target x86_64-pc-windows-msvc
       - uses: actions/download-artifact@v4
         with:
           name: Driftnet-Windows-native
@@ -23,7 +35,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Diagnose packaged installation and service startup
         shell: pwsh
-        run: ./scripts/diagnose-windows-installer.ps1
+        run: ./scripts/diagnose-windows-installer.ps1 -UseRebuiltRouter $${{ inputs.rebuild_router }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

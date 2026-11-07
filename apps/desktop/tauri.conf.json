@@ -51,7 +51,7 @@
       "binaries/drift-router"
     ],
     "resources": {
-      "../../LICENSE": "licenses/Drift-LICENSE.txt",
+      "../../LICENSE": "licenses/Driftnet-LICENSE.txt",
       "../../vendor/byedpi/LICENSE": "licenses/ByeDPI-LICENSE.txt",
       "../../vendor/byedpi/UPSTREAM.json": "licenses/engine-UPSTREAM.json",
       "../../THIRD_PARTY_NOTICES.md": "licenses/THIRD_PARTY_NOTICES.md",
@@ -59,7 +59,13 @@
       "../../native/engine/fixes.json": "licenses/engine-fixes.json",
       "../../vendor/sing-box/LICENSE": "licenses/sing-box-LICENSE.txt",
       "../../vendor/sing-box/DRIFT_UPSTREAM.json": "licenses/router-UPSTREAM.json",
-      "../../native/router/README.md": "licenses/router-integration.txt"
-    }
+      "../../native/router/README.md": "licenses/router-integration.txt",
+      "../../vendor/glib/LICENSE": "licenses/GLib-rs-MIT-LICENSE.txt",
+      "../../native/patches/glib-0.18.5-variant-str-iter.patch": "licenses/GLib-rs-backport.patch"
+    },
+    "homepage": "https://github.com/ernilmz/driftnet",
+    "copyright": "\u00a9 2026 Driftnet contributors",
+    "shortDescription": "Local routing for selected apps and websites.",
+    "category": "Utility"
   }
 }

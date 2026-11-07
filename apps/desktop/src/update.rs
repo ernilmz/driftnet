@@ -8,7 +8,7 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    fs::File,
+    fs::OpenOptions,
     io::{Read, Write},
     path::PathBuf,
     sync::{
@@ -80,8 +80,10 @@ fn trusted_url(value: &str, release_asset: bool) -> bool {
         && url.username().is_empty()
         && url.password().is_none()
         && url.port().is_none_or(|port| port == 443)
+        && url.fragment().is_none()
         && if release_asset {
             url.host_str() == Some("github.com")
+                && url.query().is_none()
                 && url
                     .path()
                     .starts_with("/ernilmz/driftnet/releases/download/")
@@ -97,6 +99,38 @@ fn trusted_url(value: &str, release_asset: bool) -> bool {
                 )
             )
         }
+}
+fn trusted_asset_url(value: &str, version: &str) -> bool {
+    if !trusted_url(value, true) {
+        return false;
+    }
+    let Ok(url) = reqwest::Url::parse(value) else {
+        return false;
+    };
+    let prefix = format!("/ernilmz/driftnet/releases/download/v{version}/");
+    let Some(filename) = url.path().strip_prefix(&prefix) else {
+        return false;
+    };
+    !filename.is_empty()
+        && filename
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"._-".contains(&byte))
+}
+fn release_version(value: &str) -> Result<Version, String> {
+    if value.len() > 128 {
+        return Err("The update version is too long.".into());
+    }
+    Version::parse(value).map_err(|_| "The update version is invalid.".into())
+}
+fn create_installer(path: &std::path::Path) -> Result<std::fs::File, String> {
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    options.open(path).map_err(|error| error.to_string())
 }
 fn client() -> Result<Client, String> {
     Client::builder()
@@ -183,8 +217,7 @@ impl Updates {
             return Err("The update manifest signature is too large.".into());
         }
         verify::verify_bytes(&bytes, &signature, &manifest.version)?;
-        let available =
-            Version::parse(&manifest.version).map_err(|_| "The update version is invalid.")?;
+        let available = release_version(&manifest.version)?;
         let current = Version::parse(env!("CARGO_PKG_VERSION")).map_err(|e| e.to_string())?;
         if available <= current {
             self.set("current", None, "");
@@ -194,7 +227,7 @@ impl Updates {
             .platforms
             .get(&platform())
             .ok_or("No update is available for this platform.")?;
-        if !trusted_url(&asset.url, true) || asset.signature.len() > 8192 {
+        if !trusted_asset_url(&asset.url, &manifest.version) || asset.signature.len() > 8192 {
             return Err("The update asset is invalid.".into());
         }
         self.set("downloading", Some(&manifest.version), "");
@@ -208,11 +241,10 @@ impl Updates {
             std::fs::set_permissions(folder.path(), std::fs::Permissions::from_mode(0o700))
                 .map_err(|e| e.to_string())?;
         }
-        let path = folder.path().join(format!(
-            "Driftnet-{}.{}",
-            manifest.version,
-            installer_suffix()
-        ));
+        // Network metadata never becomes a local path component.
+        let path = folder
+            .path()
+            .join(format!("Driftnet-update.{}", installer_suffix()));
         let response = client
             .get(&asset.url)
             .send()
@@ -224,13 +256,7 @@ impl Updates {
         {
             return Err("The update installer is too large.".into());
         }
-        let mut file = File::create(&path).map_err(|e| e.to_string())?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            file.set_permissions(std::fs::Permissions::from_mode(0o600))
-                .map_err(|e| e.to_string())?;
-        }
+        let mut file = create_installer(&path)?;
         let mut response = response.take(MAX_INSTALLER + 1);
         let copied = std::io::copy(&mut response, &mut file).map_err(|e| e.to_string())?;
         if copied > MAX_INSTALLER {
@@ -365,5 +391,68 @@ mod tests {
             "https://github.com/ernilmz/driftnet/releases/download/v1/readme.txt",
             true
         ));
+    }
+    #[test]
+    fn asset_tag_credentials_and_path_cannot_escape_release_policy() {
+        let suffix = installer_suffix();
+        let base = "https://github.com/ernilmz/driftnet/releases/download/v1.0.1";
+        assert!(trusted_asset_url(
+            &format!("{base}/Driftnet-1.0.1.{suffix}"),
+            "1.0.1"
+        ));
+        for value in [
+            format!("{base}/../other/Driftnet.{suffix}"),
+            format!("{base}/nested/Driftnet.{suffix}"),
+            format!("{base}/%2e%2e%2fDriftnet.{suffix}"),
+            format!("{base}/Driftnet.{suffix}?redirect=elsewhere"),
+            format!("{base}/Driftnet.{suffix}#ignored"),
+            format!(
+                "https://user:password@github.com/ernilmz/driftnet/releases/download/v1.0.1/Driftnet.{suffix}"
+            ),
+            format!(
+                "https://github.com:8443/ernilmz/driftnet/releases/download/v1.0.1/Driftnet.{suffix}"
+            ),
+        ] {
+            assert!(!trusted_asset_url(&value, "1.0.1"));
+        }
+        assert!(!trusted_asset_url(
+            &format!("{base}/Driftnet.{suffix}"),
+            "1.0.2"
+        ));
+    }
+    #[test]
+    fn version_cannot_be_a_path_or_unbounded_string() {
+        assert!(release_version("1.0.1-rc.2").is_ok());
+        for value in [
+            "../../elsewhere",
+            "1.0.1/../../../file",
+            "1.0.1\\file",
+            "1.0.1:alternate-stream",
+        ] {
+            assert!(release_version(value).is_err());
+        }
+        assert!(release_version(&format!("1.0.1-{}", "a".repeat(129))).is_err());
+    }
+    #[test]
+    fn staged_installer_never_overwrites_an_existing_path() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("installer.pkg");
+        std::fs::write(&path, b"existing bytes").unwrap();
+        assert!(create_installer(&path).is_err());
+        assert_eq!(std::fs::read(path).unwrap(), b"existing bytes");
+    }
+    #[cfg(unix)]
+    #[test]
+    fn unix_staging_rejects_symlinks_and_is_private_at_creation() {
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join("target");
+        std::fs::write(&target, b"untouched").unwrap();
+        let link = directory.path().join("installer.pkg");
+        symlink(&target, &link).unwrap();
+        assert!(create_installer(&link).is_err());
+        assert_eq!(std::fs::read(target).unwrap(), b"untouched");
+        let file = create_installer(&directory.path().join("new.pkg")).unwrap();
+        assert_eq!(file.metadata().unwrap().permissions().mode() & 0o777, 0o600);
     }
 }

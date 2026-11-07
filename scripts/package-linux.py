@@ -58,6 +58,16 @@ def build(args: argparse.Namespace) -> Path:
         for name in ["LICENSE", "THIRD_PARTY_NOTICES.md"]:
             if (ROOT / name).is_file(): install(ROOT / name, f"usr/share/doc/driftnet/{name}")
         install(ROOT / "native/router/LICENSE", "usr/share/doc/driftnet/router-LICENSE")
+        # Mirror the fixed license/provenance files in the base desktop bundle.
+        # Installer-only macOS resources are deliberately outside this namespace.
+        for relative, destination in config["bundle"].get("resources", {}).items():
+            if not destination.startswith("licenses/"):
+                continue
+            source = (ROOT / "apps/desktop" / relative).resolve()
+            parts = Path(destination).parts
+            if not source.is_relative_to(ROOT) or not source.is_file() or ".." in parts:
+                raise SystemExit(f"Invalid license resource: {relative}")
+            install(source, f"usr/share/doc/driftnet/{destination}")
         for name in ["postinst", "prerm", "postrm"]: install(ROOT / "native/linux" / name, f"DEBIAN/{name}", True)
         (stage / "DEBIAN/control").write_text(f"""Package: driftnet
 Version: {version}

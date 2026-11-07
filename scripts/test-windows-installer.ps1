@@ -16,14 +16,15 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     throw 'The disposable runner must already be elevated; this test never prompts for credentials.'
 }
 $Installer = (Resolve-Path $Installer).Path
-$installDir = Join-Path $env:RUNNER_TEMP ('DriftnetTest-' + [guid]::NewGuid().ToString('N'))
+$installDir = Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'Drift'
+if (Test-Path $installDir) { throw 'Refusing to modify a pre-existing Program Files installation directory.' }
 $configDir = Join-Path $env:APPDATA 'app.drift.desktop'
 $rulesPath = Join-Path $configDir 'rules.json'
 $savedRules = if (Test-Path $rulesPath) { [IO.File]::ReadAllBytes($rulesPath) } else { $null }
 $results = [ordered]@{
     os = [Environment]::OSVersion.VersionString
     installer = [IO.Path]::GetFileName($Installer)
-    install = $false; runtimeImports = $false; packagedEngine = $false; repairPreservesRules = $false; legacyUpgrade = $false
+    install = $false; runtimeImports = $false; protectedService = $false; packagedEngine = $false; repairPreservesRules = $false; legacyUpgrade = $false
     selectedRoute = $false; unselectedRoute = $false; leaseCleanup = $false; crashLeaseCleanup = $false
     uninstall = $false; error = $null
 }
@@ -107,8 +108,7 @@ try {
         throw 'Runner already has DriftNetwork installed; refusing to modify a pre-existing service.'
     }
     Write-Host 'Installing the optimized NSIS package without launching its GUI'
-    # NSIS /D must be last and must not be quoted (RUNNER_TEMP has no spaces).
-    if ($installDir.Contains(' ')) { throw 'Test installation path must have no spaces for NSIS /D.' }
+    # NSIS /D must be last and unquoted; its value may contain spaces.
     Run-Checked $Installer @('/S', "/D=$installDir") 300
     Wait-ServiceReady
     $desktop = Join-Path $installDir 'drift-desktop.exe'
@@ -122,6 +122,21 @@ try {
     & python (Join-Path $PSScriptRoot 'check-windows-imports.py') --directory $installDir --report (Join-Path $PSScriptRoot '../target/windows-imports.json')
     if ($LASTEXITCODE -ne 0) { throw 'Installed binaries require an external compiler runtime' }
     $results.runtimeImports = $true
+    # Registering a LocalSystem service from a user-writable path must fail,
+    # leaving the existing protected service unchanged.
+    $untrusted = Join-Path $env:RUNNER_TEMP ('DriftnetUntrusted-' + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $untrusted | Out-Null
+    try {
+        $copy = Join-Path $untrusted 'drift-router.exe'
+        Copy-Item $router $copy
+        $beforeService = (Get-CimInstance Win32_Service -Filter "Name='DriftNetwork'").PathName
+        $negative = Start-Process $copy -ArgumentList '--install-service' -PassThru
+        if (-not $negative.WaitForExit(15000)) { $negative.Kill($true); throw 'Unsafe service registration did not terminate' }
+        if ($negative.ExitCode -eq 0) { throw 'User-writable service executable was accepted' }
+        if ((Get-CimInstance Win32_Service -Filter "Name='DriftNetwork'").PathName -cne $beforeService) { throw 'Unsafe registration changed the installed service' }
+        Wait-ServiceReady
+        $results.protectedService = $true
+    } finally { Remove-Item $untrusted -Recurse -Force }
     Run-Checked $desktop @('--check-engine')
     $results.packagedEngine = $true
 

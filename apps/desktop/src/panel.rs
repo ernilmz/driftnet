@@ -1,7 +1,7 @@
 use drift_core::panel::{self, Edge, Rect};
 use std::sync::{
     Mutex,
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
 };
 use tauri::{AppHandle, Manager, WebviewWindow};
 #[derive(Default)]
@@ -10,6 +10,9 @@ pub struct PanelState {
     pub picking: AtomicBool,
     anchor: Mutex<Option<Rect>>,
     pub hidden_at: Mutex<Option<std::time::Instant>>,
+    ready: AtomicBool,
+    open: AtomicBool,
+    presentation: AtomicU64,
 }
 fn to_rect(rect: tauri::Rect) -> Rect {
     let p = rect.position.to_physical::<i32>(1.0);
@@ -221,12 +224,64 @@ pub fn record_actual(window: &WebviewWindow) {
 }
 
 pub fn show(app: &AppHandle) {
+    let state = app.state::<PanelState>();
+    state.open.store(true, Ordering::Release);
+    state.presentation.fetch_add(1, Ordering::AcqRel);
+    if !state.ready.load(Ordering::Acquire) {
+        return;
+    }
     if let Some(window) = app.get_webview_window("main") {
         if let Ok(mut at) = app.state::<PanelState>().hidden_at.lock() {
             *at = None;
         }
         let _ = position(&window);
+        let _ = window.set_ignore_cursor_events(false);
         let _ = window.show();
         let _ = window.set_focus();
+        // The hidden document already has the closed style. Two paint frames
+        // prevent the OS show and the CSS destination from collapsing together.
+        let _ = window.eval("requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add('panel-open')))");
+    }
+}
+
+pub fn ready(app: &AppHandle) {
+    let state = app.state::<PanelState>();
+    state.ready.store(true, Ordering::Release);
+    if state.open.load(Ordering::Acquire) {
+        show(app);
+    }
+}
+
+pub fn is_open(app: &AppHandle) -> bool {
+    app.state::<PanelState>().open.load(Ordering::Acquire)
+}
+
+pub fn hide(window: &WebviewWindow) {
+    let app = window.app_handle();
+    let state = app.state::<PanelState>();
+    state.open.store(false, Ordering::Release);
+    let generation = state.presentation.fetch_add(1, Ordering::AcqRel) + 1;
+    let _ = window.eval("document.documentElement.classList.remove('panel-open')");
+    let _ = window.set_ignore_cursor_events(true);
+    let window = window.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(145));
+        let app = window.app_handle().clone();
+        let _ = app.run_on_main_thread(move || {
+            let state = window.app_handle().state::<PanelState>();
+            // A rapid second click reverses the transition and cancels this hide.
+            if state.presentation.load(Ordering::Acquire) == generation
+                && !state.open.load(Ordering::Acquire)
+            {
+                let _ = window.hide();
+            }
+        });
+    });
+}
+
+pub fn hide_on_blur(window: &WebviewWindow) {
+    hide(window);
+    if let Ok(mut at) = window.app_handle().state::<PanelState>().hidden_at.lock() {
+        *at = Some(std::time::Instant::now());
     }
 }

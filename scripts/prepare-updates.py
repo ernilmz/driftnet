@@ -33,7 +33,7 @@ TARGETS = {
 
 
 def prepare(args):
-    if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", args.version):
+    if len(args.version) > 128 or not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", args.version):
         raise ValueError("Use a semantic version without the leading v.")
     key = Path(args.key).expanduser().resolve()
     if not key.is_file():
@@ -73,6 +73,8 @@ def prepare(args):
         if not separator or target not in TARGETS or target in platforms:
             raise ValueError(f"Invalid or repeated target: {target}")
         source = Path(value).resolve()
+        if not re.fullmatch(r"[A-Za-z0-9._-]+", source.name):
+            raise ValueError("Installer filenames must contain only ASCII letters, digits, dot, dash or underscore.")
         if not source.is_file() or source.suffix.lower() != TARGETS[target]:
             raise ValueError(f"{target} requires a complete {TARGETS[target]} installer.")
         if source.name in names:

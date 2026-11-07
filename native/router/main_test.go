@@ -2,10 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestAppBoundariesAndDefaultDirect(t *testing.T) {
@@ -67,5 +71,26 @@ func TestIPv4UplinkDoesNotAdvertiseUnusableIPv6(t *testing.T) {
 	}
 	if len(tunnelAddresses(true)) != 2 {
 		t.Fatal("Genuine dual-stack uplink lost IPv6 routing")
+	}
+}
+
+// A real net.Conn with no receiver used to block forever while the handler
+// retained its privileged worker and (for validation errors) session mutex.
+func TestUnreadIPCReplyHasBoundedLifetime(t *testing.T) {
+	server, client := net.Pipe()
+	defer server.Close()
+	defer client.Close()
+	done := make(chan error, 1)
+	go func() { done <- answer(server, false, errors.New(strings.Repeat("invalid path", 4096))) }()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("unread reply unexpectedly succeeded")
+		}
+		if timeout, ok := err.(net.Error); !ok || !timeout.Timeout() {
+			t.Fatalf("want timeout, got %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("unread peer pinned a privileged worker")
 	}
 }
