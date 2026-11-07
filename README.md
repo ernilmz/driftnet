@@ -31,8 +31,8 @@ website or connection will work on every network.
 ## Install
 
 Use a package attached to [Releases](https://github.com/ernilmz/driftnet/releases).
-This repository is currently **private**; downloading releases requires repository
-access. Only install a package for your system and architecture.
+Choose the installer for your system and architecture. The app and its networking
+helper are distributed together; the corresponding router source accompanies them.
 
 | Platform | Package | Scope |
 | --- | --- | --- |
@@ -67,8 +67,9 @@ services. Disable or remove it to use Driftnet only with your own rules. Closing
 and reopening a selected app does not require toggling Access.
 
 Turn Access off or choose **Quit Driftnet** to end the session. The
-tray menus include **Uninstall Driftnet…** for removal of the app and helper. The Linux tray also provides **Open Driftnet**; its package manager can remove the app too. In-place updates
-retain the stable application identity and rules stored outside the install directory.
+tray menus include **Uninstall Driftnet…** for removal of the app and helper.
+The Linux tray also provides **Open Driftnet**; its package manager can remove the
+app too. In-place updates retain the stable application identity and rules stored outside the install directory.
 
 ## How it works
 
@@ -115,35 +116,39 @@ platform URLs, installer bytes, and metadata cannot be substituted independently
 Updates use the full `.pkg`, `.exe`, or `.deb`, so the privileged helper is upgraded
 together with the app.
 
-The anonymous update feed cannot access private GitHub releases. While the
-repository remains private, use its installers manually. Automatic delivery will
-become available when the release feed is public; no GitHub token is embedded in
-the application. A failed check never changes Access or forces a sign-in.
+Automatic delivery requires a publicly accessible release feed. An inaccessible
+or private feed leaves manual installation available and fails quietly; no GitHub
+token is embedded in the application. A failed check never changes Access or
+forces a sign-in.
 
 ## Verification status
 
-Version **1.0.0** contains the native routing, Linux integration, reopen correction,
-and signed updater. Implementation and observed device acceptance are tracked
-separately in [the acceptance record](docs/ACCEPTANCE.md).
+Version **1.0.1** includes the reviewed installer boundaries, signed full-installer
+updater, GLib safety backport and the fixed Go networking dependency. Detailed
+results and limits are recorded in [ACCEPTANCE.md](docs/ACCEPTANCE.md) and the
+[security review](docs/SECURITY-REVIEW.md).
 
-The macOS 1.0.0 package is installed: its receipt and running helper report 1.0.0,
-and migration left only Driftnet installed. Three normal Discord quit/reopen cycles
-reached the main screen during one continuously active Access session. The native
-IPv4-only tunnel, selected/direct ownership counters, actual OS proxy selection,
-and gateway HTTP 200 were observed. Release engine smoke/socket and public
-website-policy probes also passed.
+- macOS: the installed 1.0.0 build passed native routing, actual OS website proxy
+  selection, migration and three Discord quit/reopen cycles in one Access session.
+  The 1.0.1 package is built and its engine smoke check passed; it is a real signed
+  upgrade target for that installation, rather than relabeling the installed build.
+- Ubuntu 24.04: native CI passed build/package, systemd/TUN routing, GNOME PAC
+  restoration and optimized GLib regression tests. macOS native CI also passed.
+- Windows: real selected/direct TUN traffic and graceful/crash cleanup passed.
+  The final installer rerun for legacy/current shortcut cleanup is still pending;
+  this is not recorded as an all-platform CI pass.
 
-The current version's real Discord voice/video has not been user-tested. The
-optimized Windows installer has been cross-built. The Linux policy/engine CI job
-passed in [run 42367749112](https://github.com/ernilmz/driftnet/actions/runs/42367749112);
-the macOS, Windows and Ubuntu desktop jobs are still running. Native desktop CI
-and device acceptance remain separate: a build alone does not establish successful
-installation or voice on another platform.
+Source and unstripped-binary Go scans found no reachable or imported-package
+advisory for macOS, Windows and Linux after the exact `x/net` v0.60.0 pin. Six
+findings remain in unimported upstream package metadata and are documented, not
+silently called fixed. Real current-version Discord voice/video and physical
+Windows 10 user acceptance remain unverified. A working HTTP request or CI build
+is not evidence of call quality.
 
 ## Build from source
 
 Build on the target OS for normal distribution. Developers need stable Rust,
-Node 22+, Python 3, Go 1.27+, and the [Tauri native prerequisites](https://v2.tauri.app/start/prerequisites/).
+Node 22+, Python 3, Go 1.27.3+, and the [Tauri native prerequisites](https://v2.tauri.app/start/prerequisites/).
 macOS needs Command Line Tools. Windows needs Microsoft C++ build tools and a C
 compiler for the engine. Linux needs WebKitGTK 4.1, GTK 3, Ayatana AppIndicator,
 OpenSSL development libraries, a C compiler, and packaging tools. End users do not

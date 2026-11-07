@@ -1,60 +1,47 @@
-DRIFTNET 1.0.0 — IMPLEMENTATION AND ACCEPTANCE
+DRIFTNET 1.0.1 — RELEASE FACTS
 7 November 2026
 
-IMPLEMENTED
-Shared Rust policy and Tauri desktop UI, English amber interface, d_ menu bar/tray
-identity, one Access switch, and website/application rule editors with icons.
-Authenticated native TUN routing for selected application TCP and UDP traffic.
-Unknown/unselected identities use direct egress; local network routes are excluded.
-Optional Discord preset; no installed Discord app is required for website use.
-Hostname-checked website PAC broker, TLS-validated DoH A/AAAA lookup and failover.
-Conditional website proxy restoration and helper/agent owner-lifetime cleanup.
-Combined macOS pkg; Windows NSIS with native service; Ubuntu systemd deb packaging.
-Linux native ELF/.desktop selection and GNOME website proxy integration.
-Discord close/reopen correction and false IPv6 detection correction on IPv4 uplinks.
-Automatic signed update checks after 20 seconds and every six hours; manual tray
-check; signed manifest + full installer verification; normal OS admin consent.
-Stable app.drift.desktop and internal helper identities retained for migration.
+PRODUCT
+English Tauri menu bar/tray UI, one Access switch, independent apps/sites, optional
+Discord preset, animated amber surface and native About with actual third-party
+credits. Installed user configuration and app.drift.desktop remain stable.
+Native authenticated local TUN routes selected app TCP/UDP. Websites use a
+hostname-checking PAC broker and selected-host DoH. No remote VPN account is used.
 
-OBSERVED EVIDENCE
-Mac 1.0.0 was user-installed. Receipt and running root helper report 1.0.0; only
-Driftnet remains installed. Legacy Drift was removed and Discord Local retired.
-Access On uses an IPv4-only TUN matching the physical interface; selected/direct
-ownership counters were observed. Three normal Discord Quit/reopen cycles reached
-the main screen in one continuously active session without toggling Access.
-Actual CFNetwork selected Discord proxy/unselected DIRECT and OS URLSession gateway
-HTTP 200 passed. Earlier shutdown restored the recorded full proxy baseline.
-New 1.0 release engine smoke check, five engine socket tests and three macOS Go
-router tests passed. Release probes passed gateway/avatar/update/download HTTP 200,
-Windows download HTTP 206 / 65,536 bytes, selected-site 200 / unselected 403, PAC DIRECT,
-website-only without Discord, and owner EOF cleanup.
-Updater has seven integrated passing authenticity, tamper, version and URL tests.
-Desktop cargo check and UI TypeScript/format checks passed on macOS.
-Windows optimized app and installer cross-built; native CI results are separate.
-Linux policy/engine CI passed in run 42367749112 after lint corrections. macOS,
-Windows and Ubuntu desktop CI jobs remain in progress.
-Final corresponding router source archive extracted outside the checkout and
-built offline with GOPROXY/GOSUMDB disabled and -mod=vendor for Darwin arm64,
-Windows amd64, Linux amd64 and Linux arm64. This is helper-source completeness,
-not additional native GUI/runtime evidence.
-An old compatibility build's successful voice call is not current-version proof.
+VERIFIED
+Installed macOS remains 1.0.0 and user reports working Access On. Receipt/helper
+and payload hashes match, migration left only Driftnet, and three normal Discord
+Quit/reopen cycles passed in one continuous Access session. Actual CFNetwork and
+URLSession selected/direct policy and gateway HTTP 200 passed. Voice is untested.
+New 1.0.1 Mac package is built and bundled --check-engine passed; it is not yet
+installed and still needs its final byte/privacy/signature check.
+Native macOS/Ubuntu complete CI jobs passed at 89ae408/c181ba3, including Go scans,
+optimized GLib backport tests, GNOME PAC recovery, systemd and real Linux routing.
+Windows real selected/direct TUN plus graceful/crash cleanup passed after the
+networking dependency fix. Final legacy/current shortcut installer rerun is pending.
+Eleven updater security tests passed. Earlier 1.0.0 signed real artifacts passed
+production verifier checks; all final 1.0.1 assets must be signed and checked anew.
+The 1.0.1 router source archive has 4,420 normalized members/4,219 regular files and
+builds offline for Darwin arm64, Windows amd64, Linux amd64 and Linux arm64.
 
-REMAINING ACCEPTANCE
-macOS clean uninstall, additional failure/network-change paths and real Discord
-voice/video. Native Windows CI then clean install without Discord,
-website download, app reopen, real voice, upgrade and uninstall on a Windows host.
-Native Linux CI then Ubuntu 24.04+ GNOME/systemd package, app/site, cleanup and
-upgrade acceptance. Mixed-DPI/multi-monitor native popup checks on each platform.
-Actual signed packaged update through OS consent with rule preservation.
-These are observations still needed, rather than missing routing/updater features.
+SECURITY
+Exact x/net v0.60.0 dependency pin; Go 1.27.3 source and identical unstripped-binary
+scans on Mac/Windows/Linux show 0 reachable and 0 imported-package advisories.
+Six unused-package metadata advisories remain documented in native/router/README.
+GLib's exact two-line upstream fix is vendored with full original/patched hashes,
+license and native optimized regression tests. Four Rust unmaintained warnings
+remain recorded. Same-user installer staging race and lack of production publisher
+certificates are explicit residual risks, not silently called fixed.
 
-PUBLISHING
-Repository target: ernilmz/driftnet, private. Do not change visibility without the
-owner's instruction. Private release downloads require repository access; automatic
-anonymous update checks cannot fetch them. No GitHub access token is embedded.
-Source is MIT for independent code; router GPL source/notices accompany binaries.
-Production Apple notarization/Windows Authenticode certificates are not present.
-Update Minisign payload signing is separate and its private key stays outside git.
-See docs/ACCEPTANCE.md for the detailed record and docs/status.json for structured
-status. Update evidence from actual runs; never turn a pending device check into
-passed solely because its binary compiled.
+REMAINING RELEASE GATES
+Final Windows installer/shortcut upgrade/removal rerun; collect all 1.0.1 packages;
+final artifact privacy checks; regenerate checksums and sign manifest+installers;
+verify actual signed bytes using the production verifier. Do not publish stale
+1.0.0 signatures from the old updates staging directory.
+Owner authorizes PUBLIC only after the checks and release packages are complete.
+No GitHub token/private signing key is embedded. Anonymous updates need a public feed.
+
+SEPARATE USER ACCEPTANCE
+Actual OS-approved signed 1.0.0-to-1.0.1 update preserving rules; current voice/video;
+physical Windows 10 user experience; physical Linux/multi-monitor GUI and additional
+network-change/IPv6/uninstall scenarios beyond native CI and recorded Mac checks.

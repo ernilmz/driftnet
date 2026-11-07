@@ -1,6 +1,6 @@
 # Networking architecture
 
-Driftnet 1.0.0 consists of a shared Rust policy and Tauri interface, an unprivileged
+Driftnet 1.0.1 consists of a shared Rust policy and Tauri interface, an unprivileged
 session agent, a local TCP/UDP engine, and an installed native routing helper.
 macOS uses a LaunchDaemon, Windows a service, and Linux a systemd service. No remote
 VPN endpoint is involved.
@@ -154,11 +154,30 @@ source accompanies installers. Independent Rust/UI and C-engine components retai
 their own MIT licenses. See [router integration](../native/router/README.md) and
 [third-party notices](../THIRD_PARTY_NOTICES.md).
 
-The final 6.6 MB corresponding-source archive was extracted outside the checkout
-and built with network module lookup disabled (`GOPROXY=off`, `GOSUMDB=off`,
-`-mod=vendor`) for Darwin arm64, Windows amd64, Linux amd64 and Linux arm64. This
-checks archive completeness and offline helper cross-builds, rather than native
-desktop installation or traffic behavior on those systems.
+The 1.0.1 corresponding-source archive contains the exact staged module and
+vendored dependency set. Its 4,420 member headers are normalized to root ids,
+empty account names and fixed timestamps; gzip omits its source filename/time.
+It built offline with `GOPROXY=off`, `GOSUMDB=off`, `-mod=vendor` for Darwin arm64,
+Windows amd64, Linux amd64 and Linux arm64. This checks source completeness,
+rather than native desktop installation or traffic behavior on those systems.
+
+### Dependency security in 1.0.1
+
+The generated router stage pins `golang.org/x/net` to v0.60.0, retaining the
+verified upstream source while applying the dependency update in the build copy.
+Go 1.27.3 source and unstripped-binary vulnerability scans passed for macOS,
+Windows and Linux with zero reachable advisories and zero imported-package
+advisories. Six findings remain in unimported upstream packages and are listed in
+[router provenance](../native/router/README.md). Stripped release binaries do not
+retain enough symbols for the same precise binary scan; the identical unstripped
+audit build provides that evidence. No advisory is globally suppressed.
+
+Linux's GTK3 dependency uses the exact reviewed upstream `VariantStrIter` safety
+backport in GLib `0.18.5+driftnet.1`. The source and every retained crate file are
+checksum-pinned; optimized upstream iterator tests passed in native Ubuntu CI.
+See [backport provenance](../native/patches/README.md). Remaining unmaintained Rust
+dependency warnings and the limits of scanner results are recorded in the
+[security review](SECURITY-REVIEW.md).
 
 Policy tests, loopback relay tests, live endpoint probes, native ownership checks,
 installation, real voice and visual behavior are separate evidence. Current results

@@ -1,8 +1,7 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "product": "Driftnet",
   "repository": "ernilmz/driftnet",
-  "repository_visibility": "private",
   "application_identifier": "app.drift.desktop",
   "design": "minimal_terminal_amber",
   "backend": "authenticated_native_tun_with_hostname_pac_broker",
@@ -29,45 +28,60 @@
     "installation": "normal_os_installer_with_administrator_consent"
   },
   "verification": {
-    "macos_native_selected_app_routing": "1_0_installed_ipv4_tun_selected_and_direct_ownership_counters_observed",
-    "macos_site_and_discord_http": "CFNetwork_selected_proxy_unselected_direct_and_URLSession_HTTP200_passed_on_1_0",
-    "macos_discord_reopen_with_access_on": "three_normal_quit_reopen_cycles_passed_same_session",
-    "macos_new_1_0_package": "installed_receipt_and_helper_verified",
-    "macos_release_check_engine": "passed",
-    "release_engine_socket_tests": "5_passed",
-    "macos_router_go_tests": "3_passed",
-    "release_public_endpoint_and_website_policy_probe": "passed",
-    "ipv4_uplink_false_ipv6": "corrected_with_go_regression",
-    "updater_signature_tests": "7_integrated_tests_passed_on_macos",
-    "desktop_cargo_check": "passed_on_macos",
-    "ui_typescript_and_format": "passed",
-    "windows_optimized_installer": "cross_built",
-    "windows_native_ci": "running_run_42367749112",
-    "windows_device_acceptance": "pending",
-    "linux_native_ci": "desktop_running_run_42367749112",
-    "linux_desktop_acceptance": "pending",
-    "initial_ci": "lint_corrections_applied_linux_policy_engine_passed_desktop_jobs_running",
+    "macos_installed_version": "1.0.0",
+    "macos_installed_acceptance": "user_working_AccessOn_receipt_helpers_and_payload_hashes_verified",
+    "macos_discord_reopen": "three_normal_cycles_same_continuous_1_0_0_session_passed",
+    "macos_website_policy": "actual_CFNetwork_selected_proxy_unselected_direct_URLSession_gateway_HTTP200_passed",
+    "macos_1_0_1_package": "built_bundled_engine_smoke_passed_not_yet_installed",
+    "macos_1_0_1_final_privacy_signatures": "pending_final_artifact_audit",
+    "macos_native_ci": "passed_89ae408_and_c181ba3",
+    "linux_native_ci": "passed_89ae408_and_c181ba3_including_systemd_TUN_GNOME_PAC_GLib",
+    "windows_native_routing": "net60_selected_direct_graceful_and_crash_cleanup_passed",
+    "windows_installer_final_shortcut_cleanup": "pending_run_42375361885",
+    "windows_physical_10_user_acceptance": "not_recorded",
     "current_version_voice_video": "not_user_tested",
-    "macos_brand_migration": "legacy_Drift_removed_only_Driftnet_installed",
-    "linux_policy_engine_ci": "passed_run_42367749112",
-    "macos_legacy_discord_local": "stopped_moved_to_trash_no_autostart",
-    "macos_native_ci": "running_run_42367749112",
-    "corresponding_router_source_offline_build": {
-      "archive_size": "6.6_MB",
+    "updater_integrated_security_tests": "11_passed",
+    "full_signed_1_0_0_to_1_0_1_installation": "pending_public_feed_and_user_OS_consent",
+    "glib_backport": "exact_upstream_fix_file_hash_guard_and_optimized_Ubuntu_iterator_tests_passed",
+    "go_dependency_audit": {
+      "toolchain": "Go1.27.3",
+      "x_net_pin": "v0.60.0",
+      "source_and_unstripped_binary_passed_targets": [
+        "darwin-arm64",
+        "windows-amd64",
+        "linux-amd64"
+      ],
+      "reachable_advisories": 0,
+      "imported_package_advisories": 0,
+      "unimported_package_metadata_advisories": 6,
+      "standard_library": "clean",
+      "detail": "native/router/README.md"
+    },
+    "corresponding_source_1_0_1": {
+      "members": 4420,
+      "regular_files": 4219,
+      "owner_timestamp_headers": "normalized",
       "GOPROXY": "off",
       "GOSUMDB": "off",
       "module_mode": "vendor",
-      "passed_targets": [
+      "offline_build_passed_targets": [
         "darwin-arm64",
         "windows-amd64",
         "linux-amd64",
         "linux-arm64"
       ]
-    }
+    },
+    "final_release_manifest_and_all_installer_signatures": "pending_final_assets",
+    "latest_complete_checks_matrix": "not_yet_all_green_final_Windows_installer_rerun_pending"
   },
   "production_publisher_signing": {
     "apple_notarization": false,
     "windows_authenticode": false
   },
-  "acceptance_record": "docs/ACCEPTANCE.md"
+  "acceptance_record": "docs/ACCEPTANCE.md",
+  "publication": {
+    "public_release_authorized": true,
+    "condition": "all_native_release_gates_and_final_signed_artifacts_complete",
+    "completed": false
+  }
 }

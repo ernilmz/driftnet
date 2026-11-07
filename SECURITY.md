@@ -52,7 +52,7 @@ signing key: installed clients cannot automatically trust an unrelated replaceme
 
 ## Scope of evidence
 
-The current version is 1.0.0. The [acceptance record](docs/ACCEPTANCE.md) distinguishes
+The current release target is 1.0.1. The [acceptance record](docs/ACCEPTANCE.md) distinguishes
 local tests from native device and packaged-flow verification. A passing policy test
 or build alone does not prove native isolation, crash cleanup, successful installation
 or real voice/video on another platform or network.

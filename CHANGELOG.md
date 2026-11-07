@@ -1,14 +1,19 @@
 # Changelog
 
-## 1.0.1
+## 1.0.1 — release preparation
 
 - Pin the local router to the fixed `golang.org/x/net` v0.60.0 dependency set.
   Official source and unstripped-binary vulnerability scans pass on macOS,
   Windows and Linux; unused module metadata findings remain documented.
 - Ship the reviewed protected installer paths, bounded control replies,
   signed full-installer updates, GLib safety backport and neutral Driftnet credits.
-- Deliver the first published security release as an upgrade from the private
-  1.0.0 development installation; preserve all existing rules and identifiers.
+- Prepare the first published security release as an upgrade from the installed
+  1.0.0 development build, preserving existing rules and identifiers.
+- Validate native selected/direct traffic and graceful/crash cleanup on Windows,
+  plus complete macOS/Ubuntu jobs, GNOME proxy recovery and the optimized GLib
+  backport tests. Final Windows installer shortcut acceptance remains pending.
+- Normalize router source archive ownership/timestamps and verify offline builds
+  for macOS arm64, Windows x64 and Linux x64/arm64.
 
 ## 1.0.0 — 2026-11-07
 

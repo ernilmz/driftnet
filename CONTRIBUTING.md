@@ -74,8 +74,8 @@ Build and, where credentials are available, apply OS publisher signatures first.
 Then sign the final complete installers, not app-only bundles:
 
 ```sh
-python3 scripts/prepare-updates.py --version 1.0.0 \
-  --asset darwin-aarch64=dist/Driftnet-1.0.0-macOS.pkg \
+python3 scripts/prepare-updates.py --version 1.0.1 \
+  --asset darwin-aarch64=dist/Driftnet-1.0.1-macOS.pkg \
   --output dist/updates
 ```
 
