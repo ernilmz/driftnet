@@ -10,6 +10,10 @@ on:
         description: Rebuild only the router to diagnose corrected native code
         type: boolean
         default: true
+      full_test:
+        description: Run the full native installer and TUN test against the existing package
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -20,15 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        if: inputs.rebuild_router
+        if: inputs.rebuild_router && !inputs.full_test
         with:
           go-version: '1.27.x'
           cache-dependency-path: vendor/sing-box/go.sum
       - name: Build current native router only
-        if: inputs.rebuild_router
+        if: inputs.rebuild_router && !inputs.full_test
         run: python scripts/build-router.py --target x86_64-pc-windows-msvc
       - name: Native Windows service security and readiness regressions
-        if: inputs.rebuild_router
+        if: inputs.rebuild_router && !inputs.full_test
         working-directory: target/router-src
         run: go test -tags with_gvisor ./cmd/drift-router ./common/process
       - uses: actions/download-artifact@v4
@@ -38,8 +42,16 @@ jobs:
           run-id: ${{ inputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Diagnose packaged installation and service startup
+        if: '!inputs.full_test'
         shell: pwsh
         run: ./scripts/diagnose-windows-installer.ps1 -UseRebuiltRouter $${{ inputs.rebuild_router }}
+      - name: Exercise the downloaded native installer and real TUN routing
+        if: inputs.full_test
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem target/diagnostic-input -Recurse -Filter '*-setup.exe')
+          if ($packages.Count -ne 1) { throw 'Expected one authenticated installer artifact' }
+          ./scripts/test-windows-installer.ps1 -Installer $packages[0].FullName -Report target/windows-diagnostics/native-installer-test.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

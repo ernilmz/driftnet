@@ -166,10 +166,10 @@ try {
     if (-not (Test-Path $desktop)) { throw 'Upgrade did not reuse the original installation path' }
     if ((Get-ItemProperty $legacyKey).DisplayName -ne 'Driftnet') { throw 'Upgrade did not rebrand the existing uninstall entry' }
     if (Test-Path $newDuplicateKey) { throw 'Upgrade created a duplicate installed product entry' }
-    if (Test-Path $legacyShortcut) { throw 'Upgrade left the old product shortcut behind' }
+    $legacyShortcutRemoved = -not (Test-Path $legacyShortcut)
     Run-Checked $desktop @('--check-engine')
     $results.repairPreservesRules = $true
-    $results.legacyUpgrade = $true
+    $results.legacyUpgrade = $legacyShortcutRemoved
 
     # Read the original physical NIC before creating TUN, then bind the engine's
     # outbound sockets to it so fragments cannot be reassembled by the tunnel.
@@ -261,6 +261,9 @@ try {
     Wait-Until { -not (Test-Path $desktop) -and -not (Test-Path $router) -and -not (Test-Path $enginePath) -and -not (Test-Path $agentPath) -and -not (Test-Path (Join-Path $installDir 'uninstall.exe')) } 'installed executables removal'
     if ([IO.File]::ReadAllText($rulesPath) -cne $fixture) { throw 'Uninstall unexpectedly removed user rules' }
     $results.uninstall = $true
+    # Keep migration assertions after the data-plane checks so a cosmetic
+    # shortcut regression cannot hide service/routing/cleanup test evidence.
+    if (-not $legacyShortcutRemoved) { throw 'Upgrade left the old product shortcut behind' }
 } catch {
     $results.error = $_.Exception.Message
     throw

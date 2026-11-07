@@ -41,6 +41,10 @@
   !insertmacro DRIFT_VALIDATE_INSTALL Prepare
   ; Remove only the former product shortcuts that target this exact installed
   ; executable. Preserve unrelated shortcuts and all user configuration.
+  ; Silent installation sections can execute on a worker thread. COM must be
+  ; initialized on that thread before the ShellLink helper can inspect a link.
+  Push $4
+  System::Call 'ole32::CoInitializeEx(p 0, i 2) i.r4'
   !insertmacro IsShortcutTarget "$SMPROGRAMS\Drift\Drift.lnk" "$INSTDIR\drift-desktop.exe"
   Pop $0
   ${If} $0 = 1
@@ -52,6 +56,11 @@
   ${If} $0 = 1
     Delete "$DESKTOP\Drift.lnk"
   ${EndIf}
+  ${If} $4 = 0
+  ${OrIf} $4 = 1
+    System::Call 'ole32::CoUninitialize()'
+  ${EndIf}
+  Pop $4
 !macroend
 !macro NSIS_HOOK_POSTINSTALL
   ExecWait '"$INSTDIR\drift-router.exe" --install-service' $0
