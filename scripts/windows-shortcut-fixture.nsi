@@ -18,12 +18,12 @@ FunctionEnd
 Section
   SetShellVarContext all
   SetOutPath "$SYSDIR"
-  !insertmacro DRIFT_RUN_VALIDATOR CleanupLegacy ""
+  !insertmacro DRIFT_RUN_VALIDATOR CleanupLegacy "-Verbose"
   ${If} $0 != 0
     Call FixtureFailure
   ${EndIf}
   ${If} ${FileExists} "$SMPROGRAMS\Drift\Drift.lnk"
-    StrCpy $1 "Legacy shortcut survived the post-install stage"
+    StrCpy $1 "Legacy shortcut survived the post-install stage: $1"
     Call FixtureFailure
   ${EndIf}
   ${IfNot} ${FileExists} "$SMPROGRAMS\Driftnet\Driftnet.lnk"

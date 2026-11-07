@@ -1,3 +1,4 @@
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$InstallDirectory,
     [ValidateSet('Validate', 'Prepare', 'Remove', 'Shortcut', 'CleanupLegacy', 'CleanupAll')][string]$Mode = 'Prepare',
@@ -34,13 +35,19 @@ function Test-ShortcutTarget([string]$Path, [string]$Target) {
     try {
         $full = [IO.Path]::GetFullPath($Path)
         $expected = [IO.Path]::GetFullPath($Target)
-        if (-not $expected.StartsWith($directory + '\', [StringComparison]::OrdinalIgnoreCase) -or -not [IO.File]::Exists($full)) { return $false }
+        if (-not $expected.StartsWith($directory + '\', [StringComparison]::OrdinalIgnoreCase) -or -not [IO.File]::Exists($full)) {
+            Microsoft.PowerShell.Utility\Write-Verbose "Shortcut missing or target outside installation: $full / $expected / $directory"
+            return $false
+        }
         $commonRoots = @([Environment]::GetFolderPath('CommonPrograms'), [Environment]::GetFolderPath('CommonDesktopDirectory'))
         $common = $null
         foreach ($candidate in $commonRoots) {
             if ($full.StartsWith($candidate + '\', [StringComparison]::OrdinalIgnoreCase)) { $common = $candidate; break }
         }
-        if ($null -eq $common -or [IO.Path]::GetExtension($full) -ine '.lnk') { return $false }
+        if ($null -eq $common -or [IO.Path]::GetExtension($full) -ine '.lnk') {
+            Microsoft.PowerShell.Utility\Write-Verbose "Shortcut outside common folders: $full"
+            return $false
+        }
         Assert-ProtectedItem ([IO.FileInfo]::new($full))
         $parent = [IO.DirectoryInfo]::new([IO.Path]::GetDirectoryName($full))
         while ($null -ne $parent) {
@@ -53,8 +60,13 @@ function Test-ShortcutTarget([string]$Path, [string]$Target) {
         $link = $shell.CreateShortcut($full)
         if ([string]::IsNullOrWhiteSpace($link.TargetPath)) { return $false }
         $actual = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($link.TargetPath))
-        return [string]::Equals($actual, $expected, [StringComparison]::OrdinalIgnoreCase)
-    } catch { return $false }
+        $matches = [string]::Equals($actual, $expected, [StringComparison]::OrdinalIgnoreCase)
+        Microsoft.PowerShell.Utility\Write-Verbose "Shortcut target match=${matches}: $actual / $expected"
+        return $matches
+    } catch {
+        Microsoft.PowerShell.Utility\Write-Verbose "Shortcut metadata rejected: $($_.Exception.Message)"
+        return $false
+    }
     finally {
         if ($null -ne $link) { $null = [Runtime.InteropServices.Marshal]::FinalReleaseComObject($link) }
         if ($null -ne $shell) { $null = [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) }
