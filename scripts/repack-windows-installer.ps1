@@ -15,6 +15,13 @@ $artifactDigest = '5fd5f5fe82bb725132c6cf9341cc12858596b902ab06b74339485d734de34
 $reportPath = Join-Path $root 'target/windows-repack.json'
 $report = [ordered]@{ baselineCommit=$baseline; baselineRun=$runId; artifactId=$artifactId; artifactSHA256=$artifactDigest; version='1.0.1'; sourceGuard=$false; baselineNetworkEvidence=$false; exactPayload=$false; payload=@{}; installer=$null; error=$null }
 New-Item -ItemType Directory -Path (Split-Path $reportPath) -Force | Out-Null
+function Find-PayloadFile([string]$Directory, [string]$Name) {
+    # 7-Zip models NSIS register-based output paths as synthetic directories
+    # such as $R7. The filename must still occur exactly once in the payload.
+    $matches = @(Get-ChildItem -LiteralPath $Directory -File -Recurse -Force | Where-Object Name -eq $Name)
+    if ($matches.Count -ne 1) { throw "Expected one exact payload filename $Name; found $($matches.Count)." }
+    return $matches[0].FullName
+}
 try {
     # Anything outside this installer/test/documentation allowlist requires the
     # ordinary full build. In particular no Rust/C/Go/UI/config/lock changes pass.
@@ -70,20 +77,22 @@ try {
     $before = Join-Path $work 'before'
     & $seven x -y "-o$before" $installers[0].FullName | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Source NSIS extraction failed.' }
+    $report.extractedBefore = @(Get-ChildItem -LiteralPath $before -File -Recurse -Force | ForEach-Object { [IO.Path]::GetRelativePath($before, $_.FullName) })
     $names = @('drift-desktop.exe','drift-agent.exe','drift-engine.exe','drift-router.exe')
+    $originalFiles = @{}
     foreach ($name in $names) {
-        $source = Join-Path $before $name
-        if (-not (Test-Path $source -PathType Leaf)) { throw "Missing immutable payload file $name" }
+        $source = Find-PayloadFile $before $name
+        $originalFiles[$name] = $source
         $report.payload[$name] = @{ before=(Get-FileHash $source -Algorithm SHA256).Hash; after=$null }
     }
     # Explicit target output avoids depending on Cargo's implicit host path.
     foreach ($directory in @('target/release','target/x86_64-pc-windows-msvc/release','apps/desktop/binaries')) {
         New-Item -ItemType Directory $directory -Force | Out-Null
     }
-    Copy-Item (Join-Path $before 'drift-desktop.exe') target/release/drift-desktop.exe
-    Copy-Item (Join-Path $before 'drift-desktop.exe') target/x86_64-pc-windows-msvc/release/drift-desktop.exe
+    Copy-Item $originalFiles['drift-desktop.exe'] target/release/drift-desktop.exe
+    Copy-Item $originalFiles['drift-desktop.exe'] target/x86_64-pc-windows-msvc/release/drift-desktop.exe
     foreach ($name in @('drift-agent','drift-engine','drift-router')) {
-        Copy-Item (Join-Path $before "$name.exe") "apps/desktop/binaries/$name-x86_64-pc-windows-msvc.exe"
+        Copy-Item $originalFiles["$name.exe"] "apps/desktop/binaries/$name-x86_64-pc-windows-msvc.exe"
     }
     $env:CARGO_TARGET_DIR = Join-Path $root 'target'
     Push-Location apps/desktop
@@ -98,8 +107,9 @@ try {
     $after = Join-Path $work 'after'
     & $seven x -y "-o$after" $packages[0].FullName | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Repacked NSIS extraction failed.' }
+    $report.extractedAfter = @(Get-ChildItem -LiteralPath $after -File -Recurse -Force | ForEach-Object { [IO.Path]::GetRelativePath($after, $_.FullName) })
     foreach ($name in $names) {
-        $hash = (Get-FileHash (Join-Path $after $name) -Algorithm SHA256).Hash
+        $hash = (Get-FileHash (Find-PayloadFile $after $name) -Algorithm SHA256).Hash
         $report.payload[$name].after = $hash
         if ($hash -ne $report.payload[$name].before) { throw "Immutable payload changed: $name" }
     }
