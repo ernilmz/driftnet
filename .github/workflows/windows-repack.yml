@@ -1,0 +1,47 @@
+name: Windows installer-only repack
+on: workflow_dispatch
+permissions:
+  contents: read
+  actions: read
+jobs:
+  repack:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+        working-directory: ui
+      - run: npm run build
+        working-directory: ui
+      - name: Verify installer validator source
+        run: python scripts/embed-windows-validator.py --check
+      - name: Repack the exact known-good 1.0.1 payload
+        shell: pwsh
+        run: ./scripts/repack-windows-installer.ps1
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Verify native installation, imports, traffic and complete cleanup
+        shell: pwsh
+        run: |
+          $installer = (Get-Content target/windows-repacked-path.txt -Raw).Trim()
+          ./scripts/test-windows-installer.ps1 -Installer $installer
+      - name: Upload installer and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Driftnet-Windows-repacked
+          path: |
+            target/x86_64-pc-windows-msvc/release/bundle/nsis/*-setup.exe
+            target/windows-repack.json
+            target/windows-installer-test.json
+            target/windows-imports.json
+          if-no-files-found: warn
+          retention-days: 14
