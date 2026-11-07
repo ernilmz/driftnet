@@ -29,10 +29,10 @@
     "installation": "normal_os_installer_with_administrator_consent"
   },
   "verification": {
-    "macos_native_selected_app_routing": "observed_on_earlier_0.5_native_build",
-    "macos_site_and_discord_http": "passed",
-    "macos_discord_reopen_with_access_on": "one_cycle_passed",
-    "macos_new_1_0_package": "acceptance_in_progress",
+    "macos_native_selected_app_routing": "1_0_installed_ipv4_tun_selected_and_direct_ownership_counters_observed",
+    "macos_site_and_discord_http": "CFNetwork_selected_proxy_unselected_direct_and_URLSession_HTTP200_passed_on_1_0",
+    "macos_discord_reopen_with_access_on": "three_normal_quit_reopen_cycles_passed_same_session",
+    "macos_new_1_0_package": "installed_receipt_and_helper_verified",
     "macos_release_check_engine": "passed",
     "release_engine_socket_tests": "5_passed",
     "macos_router_go_tests": "3_passed",
@@ -42,12 +42,28 @@
     "desktop_cargo_check": "passed_on_macos",
     "ui_typescript_and_format": "passed",
     "windows_optimized_installer": "cross_built",
-    "windows_native_ci": "not_yet_recorded",
+    "windows_native_ci": "running_run_42367749112",
     "windows_device_acceptance": "pending",
-    "linux_native_ci": "not_yet_recorded",
+    "linux_native_ci": "desktop_running_run_42367749112",
     "linux_desktop_acceptance": "pending",
-    "initial_ci": "linux_clippy_failure_corrected_locally_rerun_pending",
-    "current_version_voice_video": "not_user_tested"
+    "initial_ci": "lint_corrections_applied_linux_policy_engine_passed_desktop_jobs_running",
+    "current_version_voice_video": "not_user_tested",
+    "macos_brand_migration": "legacy_Drift_removed_only_Driftnet_installed",
+    "linux_policy_engine_ci": "passed_run_42367749112",
+    "macos_legacy_discord_local": "stopped_moved_to_trash_no_autostart",
+    "macos_native_ci": "running_run_42367749112",
+    "corresponding_router_source_offline_build": {
+      "archive_size": "6.6_MB",
+      "GOPROXY": "off",
+      "GOSUMDB": "off",
+      "module_mode": "vendor",
+      "passed_targets": [
+        "darwin-arm64",
+        "windows-amd64",
+        "linux-amd64",
+        "linux-arm64"
+      ]
+    }
   },
   "production_publisher_signing": {
     "apple_notarization": false,

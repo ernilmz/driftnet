@@ -15,7 +15,7 @@
 - Keep unmatched connections on direct egress and exclude local network destinations.
 - Resolve selected website A/AAAA records through DoH and try available destination addresses with failover.
 - Correct IPv6 readiness detection on IPv4-only uplinks and add a Go regression test.
-- Preserve the native routing session when Discord closes and reopens; a macOS reopen cycle was observed with Access still on.
+- Preserve the native routing session when Discord closes and reopens; three normal macOS quit/reopen cycles passed in the same continuously active Access session.
 - Journal website proxy leases and preserve external proxy changes during cleanup.
 
 ### Installation and updates
@@ -29,6 +29,11 @@
 ### Verification
 
 Updater signature/tamper tests and desktop checks passed locally on macOS.
+The macOS 1.0.0 package, receipt, running helper and migration were verified after
+installation. Native OS proxy selection and gateway HTTP 200 passed. The Linux
+policy/engine CI job passed; desktop jobs are tracked separately.
+The final corresponding router source archive built offline for Darwin arm64,
+Windows amd64, Linux amd64 and Linux arm64 from its vendored dependencies.
 Current-version voice/video, Windows device acceptance, and Linux desktop acceptance
 remain explicitly recorded in [ACCEPTANCE.md](docs/ACCEPTANCE.md). Compiling a package
 is not recorded as a successful installation test.

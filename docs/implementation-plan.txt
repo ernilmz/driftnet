@@ -17,22 +17,31 @@ check; signed manifest + full installer verification; normal OS admin consent.
 Stable app.drift.desktop and internal helper identities retained for migration.
 
 OBSERVED EVIDENCE
-Earlier macOS 0.5 native build passed selected app ownership/TUN and site/Discord
-HTTP checks. Shutdown restored the recorded system website proxy baseline.
-One Discord quit/reopen cycle passed without turning Access off.
+Mac 1.0.0 was user-installed. Receipt and running root helper report 1.0.0; only
+Driftnet remains installed. Legacy Drift was removed and Discord Local retired.
+Access On uses an IPv4-only TUN matching the physical interface; selected/direct
+ownership counters were observed. Three normal Discord Quit/reopen cycles reached
+the main screen in one continuously active session without toggling Access.
+Actual CFNetwork selected Discord proxy/unselected DIRECT and OS URLSession gateway
+HTTP 200 passed. Earlier shutdown restored the recorded full proxy baseline.
 New 1.0 release engine smoke check, five engine socket tests and three macOS Go
 router tests passed. Release probes passed gateway/avatar/update/download HTTP 200,
 Windows download HTTP 206 / 65,536 bytes, selected-site 200 / unselected 403, PAC DIRECT,
-website-only without Discord, and owner EOF cleanup. New pkg awaits user install.
+website-only without Discord, and owner EOF cleanup.
 Updater has seven integrated passing authenticity, tamper, version and URL tests.
 Desktop cargo check and UI TypeScript/format checks passed on macOS.
 Windows optimized app and installer cross-built; native CI results are separate.
-Initial CI exposed a Linux clippy failure, corrected locally; rerun is pending.
+Linux policy/engine CI passed in run 42367749112 after lint corrections. macOS,
+Windows and Ubuntu desktop CI jobs remain in progress.
+Final corresponding router source archive extracted outside the checkout and
+built offline with GOPROXY/GOSUMDB disabled and -mod=vendor for Darwin arm64,
+Windows amd64, Linux amd64 and Linux arm64. This is helper-source completeness,
+not additional native GUI/runtime evidence.
 An old compatibility build's successful voice call is not current-version proof.
 
 REMAINING ACCEPTANCE
-New 1.0 macOS full package install/upgrade/helper migration, repeated reopen cycles,
-and real Discord voice/video. Native Windows CI then clean install without Discord,
+macOS clean uninstall, additional failure/network-change paths and real Discord
+voice/video. Native Windows CI then clean install without Discord,
 website download, app reopen, real voice, upgrade and uninstall on a Windows host.
 Native Linux CI then Ubuntu 24.04+ GNOME/systemd package, app/site, cleanup and
 upgrade acceptance. Mixed-DPI/multi-monitor native popup checks on each platform.

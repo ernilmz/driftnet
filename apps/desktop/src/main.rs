@@ -424,6 +424,17 @@ fn open_uninstaller(app: &tauri::AppHandle) -> Result<(), String> {
         }
         let _ = app;
     }
+    #[cfg(target_os = "linux")]
+    {
+        // The system's polkit dialog owns administrator consent. No password
+        // is collected by Driftnet and no shell command is constructed.
+        let child = std::process::Command::new("/usr/bin/pkexec")
+            .args(["/usr/bin/dpkg", "--remove", "driftnet"])
+            .spawn()
+            .map_err(|error| format!("Could not open the package uninstaller: {error}"))?;
+        drop(child);
+        let _ = app;
+    }
     Ok(())
 }
 fn main() {

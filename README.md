@@ -127,14 +127,19 @@ Version **1.0.0** contains the native routing, Linux integration, reopen correct
 and signed updater. Implementation and observed device acceptance are tracked
 separately in [the acceptance record](docs/ACCEPTANCE.md).
 
-Observed macOS evidence includes selected native-app routing, website and Discord
-HTTP requests, shutdown restoration, and one Discord quit/reopen cycle while the
-same Access session remained on. The 1.0.0 release engine smoke/socket checks and
-public website-policy probes also passed. The current version's real Discord voice/video
-has not been user-tested. The optimized Windows installer has been cross-built;
-its native CI and device acceptance are tracked separately. Linux targets Ubuntu
-24.04+ with systemd and GNOME; native CI and desktop acceptance must supply their
-own results. A build alone does not establish successful installation or voice.
+The macOS 1.0.0 package is installed: its receipt and running helper report 1.0.0,
+and migration left only Driftnet installed. Three normal Discord quit/reopen cycles
+reached the main screen during one continuously active Access session. The native
+IPv4-only tunnel, selected/direct ownership counters, actual OS proxy selection,
+and gateway HTTP 200 were observed. Release engine smoke/socket and public
+website-policy probes also passed.
+
+The current version's real Discord voice/video has not been user-tested. The
+optimized Windows installer has been cross-built. The Linux policy/engine CI job
+passed in [run 42367749112](https://github.com/ernilmz/driftnet/actions/runs/42367749112);
+the macOS, Windows and Ubuntu desktop jobs are still running. Native desktop CI
+and device acceptance remain separate: a build alone does not establish successful
+installation or voice on another platform.
 
 ## Build from source
 
@@ -206,6 +211,10 @@ accompanies installers. The C engine incorporates MIT-licensed ByeDPI 17.3 with
 documented build-time changes. Windows includes the official signed Wintun binary
 under its supplied binary license. Fonts, icons, and dependencies retain their
 respective licenses.
+
+The distributed router source archive was extracted and built offline for macOS
+arm64, Windows x64 and Linux x64/arm64 using only its vendored dependencies. These
+helper cross-builds are separate from native desktop and device acceptance.
 
 See [third-party notices](THIRD_PARTY_NOTICES.md), [router integration](native/router/README.md),
 and the notices packaged with the app. Driftnet is not affiliated with Discord,

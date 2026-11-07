@@ -36,8 +36,9 @@ processing overhead. LAN, loopback, link-local and multicast routes are excluded
 The helper only exposes an IPv6 tunnel address when the physical uplink has usable
 IPv6. Advertising a local IPv6 address over an IPv4-only uplink can make Electron/Node
 reconnects prefer an unusable route. The IPv4-only/dual-stack configuration regression
-is covered by a Go test. One real macOS Discord quit/reopen cycle passed with Access
-still on; repeated cycles and other platforms remain separate acceptance checks.
+is covered by a Go test. Three normal Discord quit/reopen cycles passed on installed
+macOS 1.0.0 during one continuously active Access session. Other platforms and real
+voice/video remain separate acceptance checks.
 
 ## Website routing
 
@@ -152,6 +153,12 @@ signed Wintun 0.14.1 binary under its supplied binary license. Corresponding rou
 source accompanies installers. Independent Rust/UI and C-engine components retain
 their own MIT licenses. See [router integration](../native/router/README.md) and
 [third-party notices](../THIRD_PARTY_NOTICES.md).
+
+The final 6.6 MB corresponding-source archive was extracted outside the checkout
+and built with network module lookup disabled (`GOPROXY=off`, `GOSUMDB=off`,
+`-mod=vendor`) for Darwin arm64, Windows amd64, Linux amd64 and Linux arm64. This
+checks archive completeness and offline helper cross-builds, rather than native
+desktop installation or traffic behavior on those systems.
 
 Policy tests, loopback relay tests, live endpoint probes, native ownership checks,
 installation, real voice and visual behavior are separate evidence. Current results
