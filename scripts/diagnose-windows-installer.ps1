@@ -9,13 +9,20 @@ if (Test-Path $install) { throw 'Refusing to touch a pre-existing installation d
 $packages = @(Get-ChildItem (Join-Path $PSScriptRoot '../target/diagnostic-input') -Recurse -Filter '*-setup.exe')
 if ($packages.Count -ne 1) { throw 'Expected exactly one authenticated workflow installer artifact' }
 if (Get-Service DriftNetwork -ErrorAction SilentlyContinue) { throw 'Refusing to touch a pre-existing service' }
-$report = [ordered]@{ installerExit = $null; files = @(); installServiceExit = $null; error = $null }
+$report = [ordered]@{ validatorExit = $null; installerExit = $null; files = @(); installServiceExit = $null; error = $null }
 function Snapshot-Service([string]$Name) {
     Get-CimInstance Win32_Service -Filter "Name='DriftNetwork'" |
         Select-Object Name,State,StartName,StartMode,PathName,ProcessId,ExitCode |
         ConvertTo-Json | Set-Content (Join-Path $output "$Name.json")
 }
 try {
+    $validator = Join-Path $PSScriptRoot '../native/windows/validate-install.ps1'
+    $osPowerShell = Join-Path ([Environment]::SystemDirectory) 'WindowsPowerShell/v1.0/powershell.exe'
+    $p = Start-Process $osPowerShell -ArgumentList @('-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$validator`"", '-InstallDirectory', "`"$install`"", '-Mode', 'Validate') -PassThru `
+        -RedirectStandardOutput (Join-Path $output 'validator.stdout.txt') `
+        -RedirectStandardError (Join-Path $output 'validator.stderr.txt')
+    if (-not $p.WaitForExit(30000)) { $p.Kill($true); throw 'OS PowerShell validator timed out' }
+    $report.validatorExit = $p.ExitCode
     $p = Start-Process $packages[0].FullName -ArgumentList @('/S', "/D=$install") -PassThru
     if (-not $p.WaitForExit(180000)) { $p.Kill($true); throw 'Installer timed out' }
     $report.installerExit = $p.ExitCode
