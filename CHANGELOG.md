@@ -1,22 +1,42 @@
 # Changelog
 
-## Unreleased — Driftnet
+## 1.0.0 — 2026-11-07
 
-- Adopt the Driftnet name while preserving existing application identity and rules.
-- Add native process-based routing through a local TUN helper for macOS and Windows.
-- Add UDP association/relay and IPv6 destination support to the local engine.
-- Resolve selected website A and AAAA records with staggered address failover.
-- Add authenticated helper leases, process-owner filtering, and conditional proxy
-  restoration.
-- Include combined macOS installation/removal and Windows service lifecycle hooks.
-- Refresh the application icon while retaining the amber `d_` identity.
-- Track Discord quit/reopen, signed full-package updates, and Linux integration
-  as release work requiring acceptance.
+### Application
+
+- Adopt the Driftnet name and amber `d_` icon, preserving `app.drift.desktop` and existing rule storage for upgrades.
+- Provide one Access switch, website/application rule editors, available app icons and favicons, menu bar/tray controls, and animated edge lighting.
+- Keep Discord optional: website access and bootstrap downloads work without an installed Discord app.
+
+### Networking and lifecycle
+
+- Route selected native applications' TCP and UDP traffic using a local TUN helper on macOS, Windows, and Linux.
+- Authenticate helper clients and bind selected process ownership to the desktop user's identity.
+- Keep unmatched connections on direct egress and exclude local network destinations.
+- Resolve selected website A/AAAA records through DoH and try available destination addresses with failover.
+- Correct IPv6 readiness detection on IPv4-only uplinks and add a Go regression test.
+- Preserve the native routing session when Discord closes and reopens; a macOS reopen cycle was observed with Access still on.
+- Journal website proxy leases and preserve external proxy changes during cleanup.
+
+### Installation and updates
+
+- Package macOS app/helper/removal together, Windows app/service lifecycle together, and Ubuntu native app/systemd helper in a `.deb`.
+- Add Linux native ELF and `.desktop` app selection; website rules target GNOME desktop proxy settings.
+- Check for updates automatically and expose a manual tray check.
+- Verify the complete manifest and full installer with Minisign, including the signed version, before opening the OS installer.
+- Retain normal OS administrator approval and update app/helper together. Private releases remain inaccessible to anonymous update checks.
+
+### Verification
+
+Updater signature/tamper tests and desktop checks passed locally on macOS.
+Current-version voice/video, Windows device acceptance, and Linux desktop acceptance
+remain explicitly recorded in [ACCEPTANCE.md](docs/ACCEPTANCE.md). Compiling a package
+is not recorded as a successful installation test.
 
 ## Earlier development builds
 
-The initial compatibility backend used explicit proxy settings for supported
-Electron apps and PAC rules for selected websites. It established the rule editor,
+Early compatibility builds used explicit proxy settings for supported Electron
+apps and PAC rules for selected websites. They established the rule editor,
 menu bar/tray panel, local relay lifecycle, optional Discord preset, and website
-bootstrap download path. Those results do not imply native routing or voice parity
-for subsequent builds.
+bootstrap path. Their successful voice calls are not evidence for later native
+routing builds.

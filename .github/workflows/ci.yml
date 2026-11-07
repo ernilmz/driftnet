@@ -44,15 +44,19 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libcap2-bin pkg-config
       - uses: msys2/setup-msys2@v2
+        id: msys2
         if: runner.os == 'Windows'
         with:
           msystem: MINGW64
           install: mingw-w64-x86_64-gcc
       - name: Build networking sidecars on Windows
         if: runner.os == 'Windows'
-        run: python scripts/build-sidecars.py --release
+        run: |
+          $compiler = (Join-Path $env:DRIFT_MSYS2_ROOT 'mingw64/bin/gcc.exe').Replace('\', '/')
+          $env:DRIFT_ENGINE_CC = '"' + $compiler + '"'
+          python scripts/build-sidecars.py --release
         env:
-          DRIFT_ENGINE_CC: C:/msys64/mingw64/bin/gcc.exe
+          DRIFT_MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
       - name: Build networking sidecars on macOS
         if: runner.os == 'macOS'
         run: python3 scripts/build-sidecars.py --release

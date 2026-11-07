@@ -1,37 +1,57 @@
 {
-  "version": "0.4.1-rc.1",
-  "selected_design": 1,
-  "design_revision": "refined-terminal-amber",
-  "backend": "compatibility_proxy_and_optional_app_launch",
-  "macos_installed_verified": true,
-  "platform_routing_available": {
-    "macos_compatibility": true,
-    "windows_compatibility": "compiled_pending_device_retest",
-    "arbitrary_app_interception": false,
-    "udp": false
+  "version": "1.0.0",
+  "product": "Driftnet",
+  "repository": "ernilmz/driftnet",
+  "repository_visibility": "private",
+  "application_identifier": "app.drift.desktop",
+  "design": "minimal_terminal_amber",
+  "backend": "authenticated_native_tun_with_hostname_pac_broker",
+  "implemented": {
+    "selected_native_app_tcp_udp": true,
+    "website_rules": true,
+    "optional_discord_preset": true,
+    "discord_not_required": true,
+    "website_doh_a_aaaa_failover": true,
+    "signed_full_installer_updates": true,
+    "macos_combined_pkg": true,
+    "windows_combined_nsis": true,
+    "linux_systemd_deb": true,
+    "linux_native_elf_desktop_selection": true,
+    "linux_website_desktop": "GNOME"
   },
-  "release_ready": false,
-  "github_uploaded": false,
+  "update_feed": {
+    "automatic_check_delay_seconds": 20,
+    "automatic_check_interval_hours": 6,
+    "manifest_signature_required": true,
+    "installer_signature_required": true,
+    "private_feed_anonymous_access": false,
+    "embedded_access_token": false,
+    "installation": "normal_os_installer_with_administrator_consent"
+  },
   "verification": {
-    "core_tests": 15,
-    "network_tests": 4,
-    "ffi_tests": 2,
-    "engine_integration_tests": 4,
-    "backpressured_4mib_consecutive_passes": 20,
-    "clippy": "passed",
-    "frontend_build": "passed",
-    "macos_system_pac_and_urlsession": "passed",
-    "macos_off_restores_full_proxy_baseline": "passed",
-    "discord_download_range": "HTTP206_65536_bytes",
-    "generic_site_only_session": "passed",
-    "windows_runtime": "initial_missing_Discord_bug_fixed_retest_pending",
-    "voice": "pending_user_unavailable"
+    "macos_native_selected_app_routing": "observed_on_earlier_0.5_native_build",
+    "macos_site_and_discord_http": "passed",
+    "macos_discord_reopen_with_access_on": "one_cycle_passed",
+    "macos_new_1_0_package": "acceptance_in_progress",
+    "macos_release_check_engine": "passed",
+    "release_engine_socket_tests": "5_passed",
+    "macos_router_go_tests": "3_passed",
+    "release_public_endpoint_and_website_policy_probe": "passed",
+    "ipv4_uplink_false_ipv6": "corrected_with_go_regression",
+    "updater_signature_tests": "7_integrated_tests_passed_on_macos",
+    "desktop_cargo_check": "passed_on_macos",
+    "ui_typescript_and_format": "passed",
+    "windows_optimized_installer": "cross_built",
+    "windows_native_ci": "not_yet_recorded",
+    "windows_device_acceptance": "pending",
+    "linux_native_ci": "not_yet_recorded",
+    "linux_desktop_acceptance": "pending",
+    "initial_ci": "linux_clippy_failure_corrected_locally_rerun_pending",
+    "current_version_voice_video": "not_user_tested"
   },
-  "remaining": [
-    "Windows fresh install/update/uninstall and native UI verification",
-    "Actual Discord voice/video",
-    "Arbitrary non-proxy-aware app routing",
-    "IPv6-only public DNS fallback",
-    "Production signing/notarization"
-  ]
+  "production_publisher_signing": {
+    "apple_notarization": false,
+    "windows_authenticode": false
+  },
+  "acceptance_record": "docs/ACCEPTANCE.md"
 }

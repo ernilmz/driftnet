@@ -23,7 +23,7 @@ $savedRules = if (Test-Path $rulesPath) { [IO.File]::ReadAllBytes($rulesPath) } 
 $results = [ordered]@{
     os = [Environment]::OSVersion.VersionString
     installer = [IO.Path]::GetFileName($Installer)
-    install = $false; packagedEngine = $false; repairPreservesRules = $false
+    install = $false; packagedEngine = $false; repairPreservesRules = $false; legacyUpgrade = $false
     selectedRoute = $false; unselectedRoute = $false; leaseCleanup = $false; crashLeaseCleanup = $false
     uninstall = $false; error = $null
 }
@@ -124,12 +124,33 @@ try {
     New-Item -ItemType Directory -Force -Path $configDir | Out-Null
     $fixture = '{"schema_version":1,"rules":[{"id":"c4ec487a-0111-4eec-9222-0123456789ab","enabled":true,"target":{"kind":"site","domain":"example.com","subdomains":true}}]}'
     [IO.File]::WriteAllText($rulesPath, $fixture, [Text.UTF8Encoding]::new($false))
-    Write-Host 'Re-running setup and checking user rules survive'
-    Run-Checked $Installer @('/S', "/D=$installDir") 300
+    # Reproduce the old product's registry identity and shortcut. The package
+    # must discover its existing path without /D and rebrand it in place.
+    $legacyKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Drift'
+    $newDuplicateKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Driftnet'
+    if (-not (Test-Path $legacyKey)) { throw 'Installer lost the previously shipped Drift registry identity' }
+    Set-ItemProperty $legacyKey -Name DisplayName -Value 'Drift'
+    Set-ItemProperty $legacyKey -Name DisplayVersion -Value '0.5.0'
+    $legacyMenu = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'Drift'
+    New-Item -ItemType Directory -Force -Path $legacyMenu | Out-Null
+    $legacyShortcut = Join-Path $legacyMenu 'Drift.lnk'
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($legacyShortcut)
+    $shortcut.TargetPath = $desktop
+    $shortcut.Save()
+    [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shortcut) | Out-Null
+    [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) | Out-Null
+    Write-Host 'Upgrading the legacy identity in place and checking user rules survive'
+    Run-Checked $Installer @('/S') 300
     Wait-ServiceReady
     if ([IO.File]::ReadAllText($rulesPath) -cne $fixture) { throw 'Setup changed existing per-user rules' }
+    if (-not (Test-Path $desktop)) { throw 'Upgrade did not reuse the original installation path' }
+    if ((Get-ItemProperty $legacyKey).DisplayName -ne 'Driftnet') { throw 'Upgrade did not rebrand the existing uninstall entry' }
+    if (Test-Path $newDuplicateKey) { throw 'Upgrade created a duplicate installed product entry' }
+    if (Test-Path $legacyShortcut) { throw 'Upgrade left the old product shortcut behind' }
     Run-Checked $desktop @('--check-engine')
     $results.repairPreservesRules = $true
+    $results.legacyUpgrade = $true
 
     # Read the original physical NIC before creating TUN, then bind the engine's
     # outbound sockets to it so fragments cannot be reassembled by the tunnel.
@@ -190,8 +211,8 @@ try {
     $results.stats = $afterDirect
     Stop-Lease
     Wait-Until {
-        @(Get-NetRoute -InterfaceIndex $tunIndex -ErrorAction SilentlyContinue | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/1', '128.0.0.0/1', '0.0.0.0/0', '::/0', '::/1', '8000::/1') }).Count -eq 0
-    } 'TUN default routes removed after access stops'
+        @(Get-NetRoute -InterfaceIndex $tunIndex -ErrorAction SilentlyContinue).Count -eq 0
+    } 'all temporary TUN routes removed after access stops'
     Assert-Curl $curl
     $results.leaseCleanup = $true
     # A desktop crash/EOF must also release routes, and a fresh lease must work
@@ -206,8 +227,8 @@ try {
     Close-Control $lease
     $lease = $null
     Wait-Until {
-        @(Get-NetRoute -InterfaceIndex $crashTunIndex -ErrorAction SilentlyContinue | Where-Object { $_.DestinationPrefix -in @('0.0.0.0/1', '128.0.0.0/1', '0.0.0.0/0', '::/0', '::/1', '8000::/1') }).Count -eq 0
-    } 'TUN default routes removed after desktop lifetime pipe closes'
+        @(Get-NetRoute -InterfaceIndex $crashTunIndex -ErrorAction SilentlyContinue).Count -eq 0
+    } 'all temporary TUN routes removed after desktop lifetime pipe closes'
     Assert-Curl $curl
     $results.crashLeaseCleanup = $true
     $engine.StandardInput.Close()
@@ -217,6 +238,7 @@ try {
     Write-Host 'Uninstalling and checking service, program files, and rules'
     Run-Checked (Join-Path $installDir 'uninstall.exe') @('/S') 120
     Wait-Until { $null -eq (Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue) } 'service removal'
+    if (Test-Path $legacyKey) { throw 'Uninstall left the product registry entry behind' }
     Wait-Until { -not (Test-Path $desktop) -and -not (Test-Path $router) -and -not (Test-Path $enginePath) -and -not (Test-Path (Join-Path $installDir 'uninstall.exe')) } 'installed executables removal'
     if ([IO.File]::ReadAllText($rulesPath) -cne $fixture) { throw 'Uninstall unexpectedly removed user rules' }
     $results.uninstall = $true

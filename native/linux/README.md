@@ -30,10 +30,9 @@ proxies are never replaced. DNS settings are not modified. Browsers using their
 own proxy configuration may ignore GNOME settings; live browser verification is
 required before the release is advertised as supported.
 
-## Shared integration checklist
+## Backend integration
 
-These files intentionally avoid edits to shared platform dispatch owned by the
-main integrator:
+The shared integration now connects these components:
 
 1. `apps/mod.rs`: cfg Linux module and dispatch `resolve` to `linux::resolve`;
    exclude Linux from the unsupported fallback. App IDs are `linux:/absolute/path`
@@ -72,3 +71,7 @@ non-Unix clients. Shell maintainer scripts and Python package syntax are checked
 The Go router can be cross-compiled for Linux from macOS. Native GNOME install,
 TUN routing, browser PAC, voice, systemd and removal must be smoke-tested on a real
 Linux host; they cannot be honestly verified on the macOS development machine.
+`scripts/test-linux-installer.py` runs the disposable GitHub runner package install,
+root-service startup, real selected/unselected HTTPS TUN flows, clean stop,
+crash cleanup, repair and uninstall checks. It writes JSON evidence; it never
+claims to test a GNOME browser or Discord voice.

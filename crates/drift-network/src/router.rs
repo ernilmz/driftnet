@@ -119,7 +119,7 @@ impl Lease {
         {
             let _ = (url, engine_port, apps, interface);
             return Err(io::Error::other(
-                "Native routing is supported on macOS and Windows",
+                "Native routing is supported on macOS, Windows and Linux",
             ));
         }
         #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
@@ -193,7 +193,7 @@ impl Lease {
         if !reply.ok || (!apps.is_empty() && (reply.protocol != 2 || !reply.router)) {
             let _ = channel.write_all(b"stop\n");
             return Err(io::Error::other(reply.error.unwrap_or_else(|| {
-                "Update Drift using the new installer to enable application routing.".into()
+                "Update Driftnet using the new installer to enable application routing.".into()
             })));
         }
         #[cfg(unix)]

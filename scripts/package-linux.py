@@ -65,7 +65,7 @@ Architecture: {architecture}
 Maintainer: Driftnet contributors
 Section: net
 Priority: optional
-Depends: libc6 (>= 2.39), libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1, librsvg2-2, libssl3t64 | libssl3, libcap2-bin, systemd, gsettings-desktop-schemas
+Depends: libc6 (>= 2.39), libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1, librsvg2-2, libssl3t64 | libssl3, libcap2-bin, systemd, gsettings-desktop-schemas, pkexec
 Description: Selective application and website access
  Native application routing and GNOME website rules, controlled from the tray.
 """)

@@ -1,45 +1,51 @@
-DRIFT — GÜNCEL DURUM VE YAYIN KAPILARI
-7 Kasım 2026 · 0.4.1-rc.1
+DRIFTNET 1.0.0 — IMPLEMENTATION AND ACCEPTANCE
+7 November 2026
 
-UYGULANAN
-Rust ortak çekirdek, Tauri masaüstü kabuğu, İngilizce amber arayüz.
-Mac menü çubuğu / Windows tray, tek Access anahtarı ve site/uygulama kuralları.
-Mac: tek pkg içinde uygulama ve dar yetkili site PAC yardımcısı.
-Windows: tek NSIS Setup.exe, gerektiğinde otomatik WebView2 kurulumu.
-Discord varsayılan ama isteğe bağlı profil. Kurulu değilse uygulama başlatma
-atlanır; Discord sitesi/indirme/medya alanları çalışabilir. Başka siteye erişim
-Discord uygulamasına, hesabına veya uzak Discord sağlık kontrolüne bağlı değildir.
-Discord profili silinip sadece başka sitelerle kullanılabilir.
-Yeni Windows kurucu aynı uygulama kimliğiyle mevcut kurulumu günceller; kural
-ayarları kurulum klasörü dışında korunur. Gerçek Windows güncelleme testi bekliyor.
-GitHub'a yükleme yapılmadı ve bu görevde yapılmayacak.
+IMPLEMENTED
+Shared Rust policy and Tauri desktop UI, English amber interface, d_ menu bar/tray
+identity, one Access switch, and website/application rule editors with icons.
+Authenticated native TUN routing for selected application TCP and UDP traffic.
+Unknown/unselected identities use direct egress; local network routes are excluded.
+Optional Discord preset; no installed Discord app is required for website use.
+Hostname-checked website PAC broker, TLS-validated DoH A/AAAA lookup and failover.
+Conditional website proxy restoration and helper/agent owner-lifetime cleanup.
+Combined macOS pkg; Windows NSIS with native service; Ubuntu systemd deb packaging.
+Linux native ELF/.desktop selection and GNOME website proxy integration.
+Discord close/reopen correction and false IPv6 detection correction on IPv4 uplinks.
+Automatic signed update checks after 20 seconds and every six hours; manual tray
+check; signed manifest + full installer verification; normal OS admin consent.
+Stable app.drift.desktop and internal helper identities retained for migration.
 
-GERÇEK KANIT
-Mac kurucusu kuruldu; root yardımcı çalışıyor. Gerçek Discord Friends/Online yüklendi.
-CFNetwork seçili discord.com için proxy, example.org için DIRECT seçti.
-URLSession sadece sistem ayarlarıyla Discord gateway'den HTTP 200 aldı.
-Access kapatılınca önceki tüm scutil proxy çıktısı birebir geri geldi.
-Canlı gateway, avatar, güncelleme ve /download istekleri geçti.
-Windows indirme yönlendirmesi takip edildi ve 65536 bayt HTTP 206 ile alındı.
-Discord profili olmadan yalnız site içeren oturum geçti; başka hedef reddedildi.
-Motorun kısa send() hatası geçici kaynak kopyasına dar yama ile düzeltildi.
-Beklemeli 4 MiB aktarım ve listener temizliği 20 kez art arda geçti.
-Kullanıcının Windows denemesinde bulunan Discord kurulum bağımlılığı düzeltildi;
-yeni paketin Windows cihazındaki kabulü henüz gelmedi.
+OBSERVED EVIDENCE
+Earlier macOS 0.5 native build passed selected app ownership/TUN and site/Discord
+HTTP checks. Shutdown restored the recorded system website proxy baseline.
+One Discord quit/reopen cycle passed without turning Access off.
+New 1.0 release engine smoke check, five engine socket tests and three macOS Go
+router tests passed. Release probes passed gateway/avatar/update/download HTTP 200,
+Windows download HTTP 206 / 65,536 bytes, selected-site 200 / unselected 403, PAC DIRECT,
+website-only without Discord, and owner EOF cleanup. New pkg awaits user install.
+Updater has seven integrated passing authenticity, tamper, version and URL tests.
+Desktop cargo check and UI TypeScript/format checks passed on macOS.
+Windows optimized app and installer cross-built; native CI results are separate.
+Initial CI exposed a Linux clippy failure, corrected locally; rerun is pending.
+An old compatibility build's successful voice call is not current-version proof.
 
-KAPSAM SINIRLARI
-Uyumluluk katmanı: sistem proxy'sine uyan uygulamalar ve açıkça başlatılan
-proxy uyumlu Electron uygulamaları. Her uygulamanın bütün akışlarını şeffaf
-olarak yakalayan backend henüz yok. UDP doğrudan gider. Bu bir uzak VPN değildir.
-Seçilmeyen hostlar DIRECT; ortak CDN IP'siyle geniş eşleme yapılmaz.
-Site farklı medya/giriş alanları kullanıyorsa açıkça eklemek gerekebilir.
-Apple Developer üyeliği bu uyumluluk katmanı için gerekli değil.
-Deneysel Network Extension kaynakları dağıtılan backend değildir.
+REMAINING ACCEPTANCE
+New 1.0 macOS full package install/upgrade/helper migration, repeated reopen cycles,
+and real Discord voice/video. Native Windows CI then clean install without Discord,
+website download, app reopen, real voice, upgrade and uninstall on a Windows host.
+Native Linux CI then Ubuntu 24.04+ GNOME/systemd package, app/site, cleanup and
+upgrade acceptance. Mixed-DPI/multi-monitor native popup checks on each platform.
+Actual signed packaged update through OS consent with rule preservation.
+These are observations still needed, rather than missing routing/updater features.
 
-AÇIK YAYIN KAPILARI
-Gerçek Windows 10 x64 kurulum, güncelleme, kaldırma ve görsel/tray testi.
-Yeni sürümle gerçek Discord ses denemesi; eski sürümün ses kanıtı devralınmaz.
-Genel proxy uyumsuz uygulamalar için ayrıca native interception backend.
-IPv6-only DNS hedefleri ve kapsamlı çok ağ/ISP uyumluluğu.
-Notarizasyon / Authenticode üretim imzaları henüz yok.
-Bunlar geçmeden genel final ve her uygulama/site çalışır iddiası yapılmaz.
+PUBLISHING
+Repository target: ernilmz/driftnet, private. Do not change visibility without the
+owner's instruction. Private release downloads require repository access; automatic
+anonymous update checks cannot fetch them. No GitHub access token is embedded.
+Source is MIT for independent code; router GPL source/notices accompany binaries.
+Production Apple notarization/Windows Authenticode certificates are not present.
+Update Minisign payload signing is separate and its private key stays outside git.
+See docs/ACCEPTANCE.md for the detailed record and docs/status.json for structured
+status. Update evidence from actual runs; never turn a pending device check into
+passed solely because its binary compiled.

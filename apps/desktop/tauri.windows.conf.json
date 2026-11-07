@@ -14,13 +14,15 @@
           "English"
         ],
         "displayLanguageSelector": false,
-        "startMenuFolder": "Drift",
+        "startMenuFolder": "Driftnet",
         "installerIcon": "icons/icon.ico",
-        "installerHooks": "../../native/windows/installer-hooks.nsh"
+        "installerHooks": "../../native/windows/installer-hooks.nsh",
+        "template": "../../native/windows/installer-template.nsi"
       }
     },
     "resources": {
-      "../../licenses/Wintun-LICENSE.txt": "licenses/Wintun-LICENSE.txt"
+      "../../licenses/Wintun-LICENSE.txt": "licenses/Wintun-LICENSE.txt",
+      "../../native/windows/Tauri-LICENSE-MIT.txt": "licenses/Tauri-NSIS-LICENSE-MIT.txt"
     }
   }
 }

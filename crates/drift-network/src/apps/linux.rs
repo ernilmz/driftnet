@@ -127,16 +127,17 @@ fn native_executable(path: &Path) -> io::Result<PathBuf> {
         if alternative == path {
             continue;
         }
-        if let Ok(meta) = fs::metadata(&alternative) {
-            if meta.is_file() && meta.permissions().mode() & 0o111 != 0 {
-                let mut magic = [0u8; 4];
-                if fs::File::open(&alternative)
-                    .and_then(|mut f| f.read_exact(&mut magic))
-                    .is_ok()
-                    && magic == *b"\x7fELF"
-                {
-                    return fs::canonicalize(alternative);
-                }
+        if let Ok(meta) = fs::metadata(&alternative)
+            && meta.is_file()
+            && meta.permissions().mode() & 0o111 != 0
+        {
+            let mut magic = [0u8; 4];
+            if fs::File::open(&alternative)
+                .and_then(|mut f| f.read_exact(&mut magic))
+                .is_ok()
+                && magic == *b"\x7fELF"
+            {
+                return fs::canonicalize(alternative);
             }
         }
     }
@@ -250,58 +251,6 @@ pub fn desktop_entry(path: &Path) -> io::Result<DesktopEntry> {
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn words_preserve_quoted_spaces() {
-        assert_eq!(
-            exec_words("\"/opt/My App/bin\" --flag %U").unwrap(),
-            ["/opt/My App/bin", "--flag", "%U"]
-        );
-        assert!(exec_words("\"unterminated").is_err());
-    }
-    #[test]
-    fn never_runs_shell_or_relative_path() {
-        assert!(exec_command("sh -c touch /tmp/surprise").is_err());
-        assert!(exec_command("env -S 'sh -c anything'").is_err());
-        assert!(resolve("linux:relative-path").is_err());
-        assert!(resolve("windows:/bin/sh").is_err());
-    }
-    #[test]
-    fn desktop_entry_resolves_binary_and_metadata_without_executing_it() {
-        let directory = tempfile::tempdir().unwrap();
-        let binary = directory.path().join("A Native App");
-        fs::write(&binary, b"\x7fELFfixture, never executed").unwrap();
-        fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
-        let entry = directory.path().join("application.desktop");
-        fs::write(&entry, format!("[Desktop Entry]\nType=Application\nName=Native App\nIcon=application-icon\nExec=env TEST=1 \"{}\" --argument %U\n[Desktop Action Ignore]\nExec=/bad\n", binary.display())).unwrap();
-        let parsed = desktop_entry(&entry).unwrap();
-        assert_eq!(parsed.name, "Native App");
-        assert_eq!(parsed.icon.as_deref(), Some("application-icon"));
-        assert_eq!(parsed.executable, fs::canonicalize(binary).unwrap());
-    }
-    #[test]
-    fn rejects_nonexecutable_scripts_and_appimage() {
-        let directory = tempfile::tempdir().unwrap();
-        let binary = directory.path().join("program");
-        fs::write(&binary, b"\x7fELFfixture").unwrap();
-        fs::set_permissions(&binary, fs::Permissions::from_mode(0o644)).unwrap();
-        assert!(native_executable(&binary).is_err());
-        fs::write(&binary, b"#!/bin/sh\necho should-not-run").unwrap();
-        fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
-        assert!(native_executable(&binary).is_err());
-        let image = directory.path().join("program.AppImage");
-        fs::write(&image, b"\x7fELFfixture").unwrap();
-        fs::set_permissions(&image, fs::Permissions::from_mode(0o755)).unwrap();
-        assert!(native_executable(&image).is_err());
-    }
-    #[test]
-    fn missing_discord_is_not_fabricated() {
-        assert!(find_command("driftnet-certainly-not-an-installed-app-43932").is_err());
-    }
-}
-
 /// Locate an installed PNG app icon without running desktop entry commands.
 /// SVG-only themes retain the application's generic icon until vector rendering
 /// is available in the desktop shell.
@@ -355,4 +304,56 @@ pub fn icon_path(icon: &str) -> Option<PathBuf> {
         }
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn words_preserve_quoted_spaces() {
+        assert_eq!(
+            exec_words("\"/opt/My App/bin\" --flag %U").unwrap(),
+            ["/opt/My App/bin", "--flag", "%U"]
+        );
+        assert!(exec_words("\"unterminated").is_err());
+    }
+    #[test]
+    fn never_runs_shell_or_relative_path() {
+        assert!(exec_command("sh -c touch /tmp/surprise").is_err());
+        assert!(exec_command("env -S 'sh -c anything'").is_err());
+        assert!(resolve("linux:relative-path").is_err());
+        assert!(resolve("windows:/bin/sh").is_err());
+    }
+    #[test]
+    fn desktop_entry_resolves_binary_and_metadata_without_executing_it() {
+        let directory = tempfile::tempdir().unwrap();
+        let binary = directory.path().join("A Native App");
+        fs::write(&binary, b"\x7fELFfixture, never executed").unwrap();
+        fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
+        let entry = directory.path().join("application.desktop");
+        fs::write(&entry, format!("[Desktop Entry]\nType=Application\nName=Native App\nIcon=application-icon\nExec=env TEST=1 \"{}\" --argument %U\n[Desktop Action Ignore]\nExec=/bad\n", binary.display())).unwrap();
+        let parsed = desktop_entry(&entry).unwrap();
+        assert_eq!(parsed.name, "Native App");
+        assert_eq!(parsed.icon.as_deref(), Some("application-icon"));
+        assert_eq!(parsed.executable, fs::canonicalize(binary).unwrap());
+    }
+    #[test]
+    fn rejects_nonexecutable_scripts_and_appimage() {
+        let directory = tempfile::tempdir().unwrap();
+        let binary = directory.path().join("program");
+        fs::write(&binary, b"\x7fELFfixture").unwrap();
+        fs::set_permissions(&binary, fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(native_executable(&binary).is_err());
+        fs::write(&binary, b"#!/bin/sh\necho should-not-run").unwrap();
+        fs::set_permissions(&binary, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(native_executable(&binary).is_err());
+        let image = directory.path().join("program.AppImage");
+        fs::write(&image, b"\x7fELFfixture").unwrap();
+        fs::set_permissions(&image, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(native_executable(&image).is_err());
+    }
+    #[test]
+    fn missing_discord_is_not_fabricated() {
+        assert!(find_command("driftnet-certainly-not-an-installed-app-43932").is_err());
+    }
 }

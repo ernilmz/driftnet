@@ -46,7 +46,7 @@ impl Runtime {
                         if output.status.success() {
                             Ok(())
                         } else {
-                            Err("Could not restore the previous proxy settings. Restart Drift to retry.".into())
+                            Err("Could not restore the previous proxy settings. Restart Driftnet to retry.".into())
                         }
                     })
             });
@@ -118,7 +118,7 @@ fn helper() -> Result<PathBuf, String> {
             "drift-agent"
         });
     if !helper.is_file() {
-        return Err("The networking helper is missing from this Drift installation.".into());
+        return Err("The networking helper is missing from this Driftnet installation.".into());
     }
     Ok(helper)
 }
