@@ -33,15 +33,15 @@
     "macos_discord_reopen": "three_normal_cycles_same_continuous_1_0_0_session_passed",
     "macos_website_policy": "actual_CFNetwork_selected_proxy_unselected_direct_URLSession_gateway_HTTP200_passed",
     "macos_1_0_1_package": "built_bundled_engine_smoke_passed_not_yet_installed",
-    "macos_1_0_1_final_privacy_signatures": "pending_final_artifact_audit",
-    "macos_native_ci": "passed_89ae408_and_c181ba3",
-    "linux_native_ci": "passed_89ae408_and_c181ba3_including_systemd_TUN_GNOME_PAC_GLib",
+    "macos_1_0_1_final_privacy_signatures": "passed_29_file_privacy_license_BOM_and_actual_signature_checks",
+    "macos_native_ci": "passed_f108eee_run_42375361885",
+    "linux_native_ci": "passed_f108eee_run_42375361885_systemd_TUN_GNOME_PAC_GLib",
     "windows_native_routing": "net60_selected_direct_graceful_and_crash_cleanup_passed",
-    "windows_installer_final_shortcut_cleanup": "pending_run_42375361885",
+    "windows_installer_final_shortcut_cleanup": "passed_full_native_run_42379006434_at_0f044d4",
     "windows_physical_10_user_acceptance": "not_recorded",
     "current_version_voice_video": "not_user_tested",
     "updater_integrated_security_tests": "11_passed",
-    "full_signed_1_0_0_to_1_0_1_installation": "pending_public_feed_and_user_OS_consent",
+    "full_signed_1_0_0_to_1_0_1_installation": "not_performed_user_will_test_later",
     "glib_backport": "exact_upstream_fix_file_hash_guard_and_optimized_Ubuntu_iterator_tests_passed",
     "go_dependency_audit": {
       "toolchain": "Go1.27.3",
@@ -71,8 +71,15 @@
         "linux-arm64"
       ]
     },
-    "final_release_manifest_and_all_installer_signatures": "pending_final_assets",
-    "latest_complete_checks_matrix": "not_yet_all_green_final_Windows_installer_rerun_pending"
+    "final_release_manifest_and_all_installer_signatures": "passed_actual_version_1_0_1_all_3_corruption_and_version_99_0_0_relabel_rejected",
+    "latest_complete_checks_matrix": "accepted_Mac_Linux_policy_baseline_f108eee_plus_final_Windows_installer_only_0f044d4_exact_4_payload_hashes",
+    "signed_release_checksums": "passed_production_verifier_version_1_0_1_covers_10_assets",
+    "history_secret_scan": {
+      "head": "0f044d4",
+      "commits": 23,
+      "blobs": 1988,
+      "private_key_GitHub_AWS_actual_developer_path_matches": 0
+    }
   },
   "production_publisher_signing": {
     "apple_notarization": false,
@@ -81,7 +88,11 @@
   "acceptance_record": "docs/ACCEPTANCE.md",
   "publication": {
     "public_release_authorized": true,
-    "condition": "all_native_release_gates_and_final_signed_artifacts_complete",
-    "completed": false
+    "policy": "publish_verified_artifacts_only_no_automatic_local_installation"
+  },
+  "artifact_bytes": {
+    "Driftnet-1.0.1-macOS.pkg": 22772704,
+    "Driftnet-1.0.1-Setup.exe": 13785420,
+    "Driftnet-1.0.1-linux-amd64.deb": 14412246
   }
 }

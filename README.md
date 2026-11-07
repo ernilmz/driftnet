@@ -130,13 +130,16 @@ results and limits are recorded in [ACCEPTANCE.md](docs/ACCEPTANCE.md) and the
 
 - macOS: the installed 1.0.0 build passed native routing, actual OS website proxy
   selection, migration and three Discord quit/reopen cycles in one Access session.
-  The 1.0.1 package is built and its engine smoke check passed; it is a real signed
-  upgrade target for that installation, rather than relabeling the installed build.
+  The 1.0.1 package passed its engine smoke, privacy/license and signed-byte checks.
+  The user will test this upgrade later; it has not been installed locally.
 - Ubuntu 24.04: native CI passed build/package, systemd/TUN routing, GNOME PAC
   restoration and optimized GLib regression tests. macOS native CI also passed.
-- Windows: real selected/direct TUN traffic and graceful/crash cleanup passed.
-  The final installer rerun for legacy/current shortcut cleanup is still pending;
-  this is not recorded as an all-platform CI pass.
+- Windows: the final installer passed native installation, protected service
+  paths, selected/direct TUN traffic, graceful/crash cleanup, upgrade/shortcut
+  handling and uninstall in [run 42379006434](https://github.com/ernilmz/driftnet/actions/runs/42379006434).
+  Its four compiled payloads match the tested baseline byte for byte.
+- The actual final manifest and all three complete installers passed signature,
+  corruption and signed-version binding checks. Release checksums are signed too.
 
 Source and unstripped-binary Go scans found no reachable or imported-package
 advisory for macOS, Windows and Linux after the exact `x/net` v0.60.0 pin. Six

@@ -140,6 +140,11 @@ is retained. App-only replacement is deliberately avoided because it could leave
 the privileged helper at an incompatible version. Failed installer launch restores
 the prior active session where possible.
 
+The actual 1.0.1 manifest and all three installer signatures passed the production
+verifier, including corrupted-byte and signed-version mismatch rejection. Signed
+release checksums also authenticate the corresponding source and supporting assets.
+This establishes artifact authenticity, not an observed user installation.
+
 An inaccessible private release feed produces a quiet automatic failure. It cannot
 be made anonymously accessible by packaging a token. Private repository members
 can install manually; automatic anonymous delivery requires a public feed.

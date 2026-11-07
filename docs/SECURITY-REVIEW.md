@@ -9,8 +9,9 @@ The follow-up history scan covered all ten reachable commits through `43b8340`
 and 1,938 historical blobs, with no production-secret or actual builder-home-path
 match. The final rebuilt macOS package and normalized source archive were then
 inspected independently below as the 1.0.0 development baseline. The 1.0.1
-release adds the fixed Go networking dependency and requires new final-byte
-privacy/signature checks; old hashes are not approval of different release bytes.
+release adds the fixed Go networking dependency. Its own final-byte privacy,
+license and signature checks passed; the historical 1.0.0 evidence is not used
+as a substitute for the new artifact checks.
 
 ## Public key and private key
 
@@ -33,15 +34,15 @@ and signing host. Never upload the private key or embed a GitHub access token.
 | ID | Severity | Finding | Disposition |
 | --- | --- | --- | --- |
 | INST-MAC-01 | High, conditional local privilege escalation | A pre-existing user-owned helper state directory could contain a symlink followed by an elevated installer write; helper binaries were copied from an admin-writable application bundle. | Fixed: validate root ownership, write permissions and fixed-path symlinks before installation; exclusive temporary owner record and atomic replacement; helper binaries are direct protected payload entries. Guard fixtures, script syntax and strict staged signature checks passed. The hardened 1.0.0 package was user-installed, and installed desktop/agent/root-helper hashes match that reviewed payload with protected root ownership. Full uninstall remains separate. |
-| INST-WIN-01 | High, conditional local privilege escalation | Elevated hooks / LocalSystem service registration could execute a helper from an arbitrarily writable custom install directory. | Fixed in source: only protected Program Files product roots, owner/DACL/reparse-point validation in installer and service registration, SCM operations through trusted OS APIs, and a negative unsafe-location regression. Native protected-root regressions and real selected/direct routing plus graceful/crash cleanup passed. Final installer shortcut cleanup acceptance remains required before release. |
+| INST-WIN-01 | High, conditional local privilege escalation | Elevated hooks / LocalSystem service registration could execute a helper from an arbitrarily writable custom install directory. | Fixed in source: only protected Program Files product roots, owner/DACL/reparse-point validation in installer and service registration, SCM operations through trusted OS APIs, and a negative unsafe-location regression. Native protected-root regressions and real selected/direct routing plus graceful/crash cleanup passed. The final installer passed all twelve native assertions in run 42379006434, including shortcut migration and uninstall; its four compiled payload hashes match the tested baseline. |
 | IPC-01 | Low, local availability | An authenticated slow reader could keep a reply/lease operation blocked without a write bound. | Fixed: bounded control reply writes and teardown when readiness cannot be delivered. A real blocked socket regression passed. A malicious local user can still occupy the one global routing lease. |
 | UPD-01 | Low, defense in depth | Initial release URL checking accepted an extra path/query within the trusted GitHub repository; staging used ordinary file creation. Signatures still prevented a demonstrated remote substitution. | Hardened: exact signed `vVERSION` path, one ASCII filename, no query/fragment/credentials/nonstandard port, fixed local filename, bounded semantic version, exclusive 0600 creation and symlink rejection. |
 | LOCAL-01 | Medium, conditional local attack | The verified installer remains owned by the desktop user until the OS installer reads it. Code already running as that same uid can modify user-owned staging after verification; normal OS admin consent is still required. | Explicit residual risk. 0700/0600 and immediate re-verification are not kernel-enforced root-side authentication. No new general-purpose privileged install IPC was added. |
 | PRIV-01 | Low, privacy | Initial macOS release agent/desktop binaries contained build-machine home/source paths. Package metadata included removable attributes and OS-managed `com.apple.provenance`. | Fixed build-path disclosure: reviewed 1.0.0 29-file expanded package scan found no actual builder Unix/Windows home path, private-key/token pattern or Discord Local text. Stage metadata cleanup is applied. macOS reattached one identical 11-byte opaque provenance value across expanded files; it contained no readable builder path/secret match. No claim of zero extended attributes is made. |
 | PRIV-02 | Low, privacy | Initial corresponding-source tar headers exposed the builder account name/uid/gid and timestamps. | Fixed and rechecked: all 4,413 reviewed 1.0.0 archive members have uid/gid 0, empty owner/group names and mtime 0; gzip filename is absent and mtime 0. Only PAX path metadata remains. No unsafe member/link path was present. |
-| DEP-01 | Informational unsoundness, potentially a crash if reached | RustSec flags `glib` 0.18.5 `VariantStrIter` output-pointer mutability, RUSTSEC-2024-0429. Tauri's Linux GTK3 chain uses this version. | Exact two-line upstream fix backported as `0.18.5+driftnet.1` without changing the GTK3 API family. Official crate and all retained files are checksum-pinned; the backport guard passes. Optimized upstream iterator regressions and Ubuntu native desktop compilation passed in checks run 42371588637. That overall run still had a Windows failure; the Linux success is not an all-platform pass. |
+| DEP-01 | Informational unsoundness, potentially a crash if reached | RustSec flags `glib` 0.18.5 `VariantStrIter` output-pointer mutability, RUSTSEC-2024-0429. Tauri's Linux GTK3 chain uses this version. | Exact two-line upstream fix backported as `0.18.5+driftnet.1` without changing the GTK3 API family. Official crate and all retained files are checksum-pinned; the backport guard passes. Optimized upstream iterator regressions and Ubuntu native desktop compilation passed, including the final f108eee baseline. Combined final-platform acceptance is recorded below. |
 | DEP-GO-01 | Medium, protocol-dependent availability | Official symbol scans identified HTTP/2 advisories in the staged `golang.org/x/net` dependency. The helper's fixed configuration excludes several advisory conditions, but the linked dependency still required correction. | 1.0.1 pins exact `x/net` v0.60.0 with selected transitive dependency/checksum records. Source and identical unstripped-binary scans passed on macOS, Windows and Linux with zero reachable/imported-package advisories. Six unimported-package metadata advisories remain documented. Go 1.27.3 standard-library audit is clean. |
-| REL-01 | Low, release integrity usability | The initial `dist/SHA256SUMS.txt` named older development artifacts. | Do not publish it unchanged. Regenerate checksums after the final packages, source archive and signatures are complete. Checksums alone are not authenticity signatures. |
+| REL-01 | Low, release integrity usability | The initial `dist/SHA256SUMS.txt` named older development artifacts. | Resolved: the 1.0.1 checksum file was regenerated for ten final assets and signed with the release key. The production verifier accepted its signature/version. All twelve uploaded release assets match local digests. |
 
 ## Repository, history and package privacy
 
@@ -57,6 +58,9 @@ Observed checks, without printing matching values:
   found no production-secret or actual builder-home-path match. It also checked
   Base64 private-key envelopes; only the same three public signature fixtures
   matched the broad signature-comment pattern.
+- The final scan through `0f044d4` covered 23 commits and 1,988 blobs, with no
+  private-key block, GitHub/AWS credential or actual developer-home-path match.
+  Repository collaborator metadata listed only its owner with admin access.
 - No production credential/private-key match was identified. Credential-bearing
   URLs were synthetic policy/upstream test data. The two source home-path matches
   were in pinned upstream benchmark/tests, rather than private user files.
@@ -75,7 +79,7 @@ Observed checks, without printing matching values:
 - The initial corresponding-source archive contained 4,411 members, no absolute
   or parent-traversing member/link paths, and no actual builder-home, token or
   private-key content matches. Owner metadata still needed normalization.
-- The final normalized archive has 4,413 members with no owner account names or
+- The earlier 1.0.0 normalized archive has 4,413 members with no owner account names or
   unsafe paths/links. Its 4,212 regular files were also scanned with no private-key,
   provider-token or actual builder-home-path match. Offline helper builds from that extracted archive passed
   Darwin arm64, Windows amd64, Linux amd64 and Linux arm64 with vendored dependencies.
@@ -86,21 +90,67 @@ paths have the same protected ownership/modes, are not symlinks, and installed
 desktop/agent/router bytes match the final package payload. This checks the
 reviewed installed 1.0.0 state rather than assuming extraction permissions prove it.
 
-| Reviewed 1.0.0 development artifact (historical) | SHA-256 |
+| Reviewed final 1.0.1 artifact | SHA-256 |
 | --- | --- |
-| `Driftnet-1.0.0-macOS.pkg` | `35c9608501137c16e5a8db9f1f538b0d8dd391e374064d7ae96adb2d9f57d30f` |
-| `Driftnet-1.0.0-Router-Source.tar.gz` | `d469ac634d9b156a30f79faad61d0bd9db9e55ee19fd0be254253c289ca8fbc7` |
+| `Driftnet-1.0.1-macOS.pkg` | `4cf00568c3175f0e2da1535fd2b026879d72c10a2d8f5b447709314fd11b6401` |
+| `Driftnet-1.0.1-Setup.exe` | `3f13e775ceeef9f3fbc5d2070d7219a7ceded22a4ed5bdbe3b130245b70fbb0e` |
+| `Driftnet-1.0.1-linux-amd64.deb` | `48368ab14a7425034f02996e90c49b1fc18eb37e9e839274be8f1f62eebe3a96` |
+| `Driftnet-1.0.1-Router-Source.tar.gz` | `35fdc860d113c59a7e0ecc69b69ac59829d42e915179388c2df03c87d4f838a9` |
 
 Pattern scanning cannot establish that every possible secret is absent. It does
 not inspect GitHub's hidden infrastructure, external developer backups, previously
 shared screenshots/chats or a compromised account. No private credential values
-were uploaded as part of these checks. Final Windows/Linux payload inspection and
-post-rebuild checks must be recorded separately.
-The release staging directory previously held signatures for earlier 1.0.0
-development artifacts. Those are not approval of the 1.0.1 release: all final
-platform installers and their complete manifest must be regenerated, signed and
-checked together after the native release gates pass. The owner authorized public release after those
-checks and packages are complete; this document does not itself change visibility.
+were uploaded as part of these checks. Final platform artifact evidence follows.
+Old development signatures were removed from release staging. The actual 1.0.1
+manifest, all three full installers and signed checksum file passed the production
+verifier. Corrupted copies and signed-version relabeling were rejected. All twelve
+uploaded GitHub release assets matched their local digests before publication.
+The owner authorized public release of this verified set; the local 1.0.1 app was
+not installed, in accordance with the user's instruction.
+
+## Final 1.0.1 artifacts and native acceptance
+
+- macOS: 29 expanded files, bundle version 1.0.1, no private-key/provider-token,
+  personal developer-home or Discord Local pattern matches. The five checked
+  license/backport files exactly match their source. The BOM records root uid/gid
+  0 for helpers with 0755 network/proxy and 0700 uninstall modes; no payload
+  symlinks were present. An identical opaque 11-byte OS provenance attribute
+  appeared on expanded files without readable account/secret patterns; this is
+  not represented as zero extended metadata.
+- Linux: 40 payload entries (22 regular files) plus five control entries, all uid/gid
+  0. Four compiled executables and package scripts are 0755; only the expected
+  relative `/usr/bin/driftnet` launcher symlink is present. Required license files
+  match their source. No private-key/provider-token, personal developer-home or
+  Discord Local pattern was found. Agent/desktop/C-engine binaries retain generic
+  public `/home/runner/` CI source paths; these are reported rather than called
+  personal user data or falsely described as absent build strings.
+- Windows: the exact final installer matches the successful CI artifact digest.
+  All four runtime hashes match the compiled baseline, all thirteen checked
+  license/provenance/backport files match source, and no secret/token/personal
+  developer-path/Discord Local pattern was found among 25 extracted files. PE
+  imports need no separate VC/MinGW runtime. All twelve native assertions passed,
+  including protected installation, both routing scopes, graceful/EOF cleanup,
+  repair/upgrade, shortcut handling and uninstall; the error field was null.
+- Source: 4,420 members and 4,219 regular files, normalized root ids/empty account
+  names/fixed timestamps, PAX path metadata only, no gzip filename/time, unsafe
+  paths or secret/personal developer-path pattern matches. Extracted source builds
+  offline for all four supported router targets. The actual archived module,
+  vendor metadata and packaged Mac/Linux router build information select `x/net`
+  v0.60.0; this is not inferred solely from the source build script.
+
+Mac/Ubuntu/policy native jobs passed on the `f108eee` baseline in
+[42375361885](https://github.com/ernilmz/driftnet/actions/runs/42375361885).
+Windows's final installer-only run at `0f044d4`,
+[42379006434](https://github.com/ernilmz/driftnet/actions/runs/42379006434),
+passed without recompiling the four payloads. The older matrix's Windows failure
+is superseded by this tested installer; it is not retroactively marked green.
+
+The actual signed manifest and all three installers passed byte authentication,
+corruption rejection and version-99.0.0 relabel rejection using the production
+`update_verify.rs`. The signed checksum file also passed for version 1.0.1 and
+covers ten release assets, including corresponding source and supporting files.
+This establishes the checked artifacts' authenticity, not a real OS-approved user
+upgrade. The installed working Mac remains 1.0.0; the user will test 1.0.1 later.
 
 ## Update attack surface
 
@@ -195,17 +245,16 @@ is no claim that scanning proves absence of unknown or native-code defects.
 
 The 1.0.1 source archive has 4,420 normalized members and 4,219 regular files.
 Its extracted vendored source built offline for Darwin arm64, Windows amd64,
-Linux amd64 and Linux arm64. The 1.0.1 macOS package is built and its bundled engine
-smoke check passed, while the user's installed working app remains 1.0.0. Final
-1.0.1 byte/privacy checks, signed manifest and all installer signatures must be
-recorded after the release set is assembled.
+Linux amd64 and Linux arm64. The 1.0.1 macOS package passed its bundled engine
+smoke, final privacy/license and actual signature checks, while the user's installed working app remains
+1.0.0. All three final installer signatures and the manifest were checked together.
 
-Mac and Ubuntu complete native CI jobs passed at `89ae408` and `c181ba3`, including
-Go scans and Ubuntu's GLib/GNOME PAC/systemd routing checks. Windows real selected
-and direct TUN traffic plus graceful/crash cleanup passed; the final installer
-rerun for legacy/new shortcut cleanup remains pending. This is not an all-platform
-checks pass. Current voice/video and physical Windows 10 user acceptance are not
-inferred from these tests.
+Mac and Ubuntu complete native CI jobs passed on the `f108eee` baseline, including
+Go scans and Ubuntu's GLib/GNOME PAC/systemd routing checks. Windows real selected/
+direct TUN traffic, graceful/crash cleanup and final installer/shortcut acceptance
+passed in the later installer-only run cited above. These separate native results
+are kept distinct from the historical failed matrix. Current voice/video and
+physical Windows 10 user acceptance are not inferred from these tests.
 
 ## Reuse, branding and licensing boundary
 
