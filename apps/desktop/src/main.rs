@@ -511,12 +511,21 @@ fn main() {
                 MenuItem::with_id(app, "uninstall", "Uninstall Driftnet…", true, None::<&str>)?;
             let update_menu =
                 MenuItem::with_id(app, "updates", "Check for updates", true, None::<&str>)?;
+            #[cfg(target_os = "linux")]
+            let open = MenuItem::with_id(app, "open", "Open Driftnet", true, None::<&str>)?;
+            #[cfg(target_os = "linux")]
+            let menu = Menu::with_items(app, &[&open, &update_menu, &uninstall, &quit])?;
+            #[cfg(not(target_os = "linux"))]
             let menu = Menu::with_items(app, &[&update_menu, &uninstall, &quit])?;
             let mut tray = TrayIconBuilder::with_id("drift-tray")
                 .tooltip("Driftnet")
                 .menu(&menu)
-                .show_menu_on_left_click(false)
+                .show_menu_on_left_click(cfg!(target_os = "linux"))
                 .on_menu_event(move |app, event| {
+                    #[cfg(target_os = "linux")]
+                    if event.id.as_ref() == "open" {
+                        panel::show(app);
+                    }
                     if event.id.as_ref() == "updates" {
                         let handle = app.clone();
                         let item = update_menu.clone();

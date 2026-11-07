@@ -39,6 +39,34 @@ pub fn position(window: &WebviewWindow) -> Result<(), String> {
             .map(to_rect)
     });
     let Some(anchor) = anchor else {
+        #[cfg(target_os = "linux")]
+        {
+            // AppIndicator does not report click rectangles on Linux. Put the
+            // reopened panel on the primary display even after a monitor move.
+            let monitor = window
+                .primary_monitor()
+                .map_err(|e| e.to_string())?
+                .ok_or("No primary monitor available")?;
+            let work = monitor.work_area();
+            let scale = monitor.scale_factor();
+            let height = if state.settings.load(Ordering::Relaxed) {
+                444.0
+            } else {
+                248.0
+            };
+            let width = ((424.0 * scale).round() as u32).min(work.size.width);
+            let height = ((height * scale).round() as u32).min(work.size.height);
+            window
+                .set_size(tauri::PhysicalSize::new(width, height))
+                .map_err(|e| e.to_string())?;
+            return window
+                .set_position(tauri::PhysicalPosition::new(
+                    work.position.x + ((work.size.width - width) / 2) as i32,
+                    work.position.y + ((work.size.height - height) / 2) as i32,
+                ))
+                .map_err(|e| e.to_string());
+        }
+        #[cfg(not(target_os = "linux"))]
         return window.center().map_err(|e| e.to_string());
     };
     // Select the monitor containing the clicked tray, NEVER the previous popup monitor.
