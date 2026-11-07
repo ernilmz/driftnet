@@ -3,6 +3,7 @@
 from pathlib import Path
 import gzip,json,os,subprocess,tarfile,tempfile
 root=Path(__file__).resolve().parent.parent
+version=json.loads((root/'apps/desktop/tauri.conf.json').read_text())['version']
 source=root/'target/router-src'
 if not (source/'cmd/drift-router/main.go').is_file():raise SystemExit('Build the router first')
 go=os.environ.get('DRIFT_GO','go')
@@ -25,7 +26,7 @@ for system,arch in [('darwin','arm64'),('windows','amd64'),('linux','amd64'),('l
 for path in vendor.rglob('*'):
  if path.is_file() and path.name.upper().startswith(('LICENSE','COPYING','NOTICE','PATENTS')):files.add(path)
 files.add(vendor/'modules.txt')
-out=root/'dist/Driftnet-1.0.0-Router-Source.tar.gz';out.parent.mkdir(exist_ok=True)
+out=root/'dist'/f'Driftnet-{version}-Router-Source.tar.gz';out.parent.mkdir(exist_ok=True)
 prefix='Driftnet-router-source'
 temporary=out.with_name(out.name+'.'+str(os.getpid())+'.tmp')
 try:epoch=int(os.environ.get('SOURCE_DATE_EPOCH','0'))

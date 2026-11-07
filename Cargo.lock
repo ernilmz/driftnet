@@ -887,7 +887,7 @@ dependencies = [
 
 [[package]]
 name = "drift-agent"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "drift-core",
  "drift-engine",
@@ -900,7 +900,7 @@ dependencies = [
 
 [[package]]
 name = "drift-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "psl",
  "serde",
@@ -913,7 +913,7 @@ dependencies = [
 
 [[package]]
 name = "drift-desktop"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "base64 0.22.1",
  "drift-core",
@@ -938,14 +938,14 @@ dependencies = [
 
 [[package]]
 name = "drift-engine"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "drift-network"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "base64 0.22.1",
  "drift-core",
@@ -965,7 +965,7 @@ dependencies = [
 
 [[package]]
 name = "drift-policy-ffi"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "drift-core",
  "serde_json",

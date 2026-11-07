@@ -2,21 +2,26 @@
 """Package the app and fixed networking helpers. Never installs the package."""
 from pathlib import Path
 import argparse
+import json
 import plistlib
 import shutil
 import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parent.parent
+version = json.loads((root/'apps/desktop/tauri.conf.json').read_text())['version']
 parser = argparse.ArgumentParser()
 parser.add_argument('--app', type=Path, default=root/'target/debug/bundle/macos/Driftnet.app')
-parser.add_argument('--output', type=Path, default=root/'dist/Driftnet-1.0.0-macOS.pkg')
+parser.add_argument('--output', type=Path, default=root/'dist'/f'Driftnet-{version}-macOS.pkg')
 args = parser.parse_args()
 app = args.app.resolve()
 out = args.output.resolve()
 out.parent.mkdir(parents=True, exist_ok=True)
 if not app.is_dir():
     raise SystemExit('Build Driftnet.app first')
+info = plistlib.loads((app/'Contents/Info.plist').read_bytes())
+if info.get('CFBundleShortVersionString') != version or info.get('CFBundleIdentifier') != 'app.drift.desktop':
+    raise SystemExit('Rebuild the current Driftnet version before packaging it.')
 
 # Existing privileged directories must already be trusted BEFORE changing their
 # mode/owner. Promoting a user-created directory can retain hostile symlinks.
@@ -130,5 +135,5 @@ fi
     # Signature blobs live in Mach-O/_CodeSignature and remain verified below.
     subprocess.run(['/usr/bin/xattr', '-cr', str(stage)], check=True)
     subprocess.run(['/usr/bin/codesign', '--verify', '--deep', '--strict', str(staged_app)], check=True)
-    subprocess.run(['pkgbuild', '--root', str(stage), '--ownership', 'recommended', '--scripts', str(scripts), '--identifier', 'app.drift.desktop.installer', '--version', '1.0.0', '--install-location', '/', str(out)], check=True)
+    subprocess.run(['pkgbuild', '--root', str(stage), '--ownership', 'recommended', '--scripts', str(scripts), '--identifier', 'app.drift.desktop.installer', '--version', version, '--install-location', '/', str(out)], check=True)
 print(out)

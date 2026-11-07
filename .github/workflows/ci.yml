@@ -77,6 +77,9 @@ jobs:
       - name: Native router tests
         working-directory: target/router-src
         run: go test -tags with_gvisor ./cmd/drift-router ./common/process
+      - name: Audit the native router with pinned govulncheck
+        working-directory: target/router-src
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -tags=with_gvisor ./cmd/drift-router
       - name: Verify macOS privileged installer path protection
         if: runner.os == 'macOS'
         run: python3 scripts/test-macos-package-security.py
@@ -111,6 +114,13 @@ jobs:
           path: dist/Driftnet-*-macOS.pkg
           if-no-files-found: error
           retention-days: 14
+      - name: Remove cached Windows installer outputs
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path target/release/bundle/nsis) {
+            Remove-Item target/release/bundle/nsis -Recurse -Force
+          }
       - name: Bundle optimized Windows installer
         if: runner.os == 'Windows'
         working-directory: apps/desktop

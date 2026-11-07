@@ -5,6 +5,10 @@ certification or a claim that a compromised desktop account can be contained.
 The first history scan covered six reachable commits through `83bbab8` and 1,760
 historical file blobs. Subsequent working-tree hardening requires rebuilt packages;
 a previously signed package does not acquire later source fixes automatically.
+The follow-up history scan covered all ten reachable commits through `43b8340`
+and 1,938 historical blobs, with no production-secret or actual builder-home-path
+match. The final rebuilt macOS package and normalized source archive were then
+inspected independently below.
 
 ## Public key and private key
 
@@ -26,14 +30,14 @@ and signing host. Never upload the private key or embed a GitHub access token.
 
 | ID | Severity | Finding | Disposition |
 | --- | --- | --- | --- |
-| INST-MAC-01 | High, conditional local privilege escalation | A pre-existing user-owned helper state directory could contain a symlink followed by an elevated installer write; helper binaries were copied from an admin-writable application bundle. | Fixed in source: validate root ownership, write permissions and fixed-path symlinks before installation; exclusive temporary owner record and atomic replacement; helper binaries are direct protected payload entries. Guard fixtures, script syntax, package build and strict staged signature checks passed. Final installed package acceptance remains separate. |
+| INST-MAC-01 | High, conditional local privilege escalation | A pre-existing user-owned helper state directory could contain a symlink followed by an elevated installer write; helper binaries were copied from an admin-writable application bundle. | Fixed: validate root ownership, write permissions and fixed-path symlinks before installation; exclusive temporary owner record and atomic replacement; helper binaries are direct protected payload entries. Guard fixtures, script syntax and strict staged signature checks passed. The hardened package was user-installed, and installed desktop/agent/root-helper hashes match its payload with protected root ownership. Full uninstall remains separate. |
 | INST-WIN-01 | High, conditional local privilege escalation | Elevated hooks / LocalSystem service registration could execute a helper from an arbitrarily writable custom install directory. | Fixed in source: only protected Program Files product roots, owner/DACL/reparse-point validation in installer and service registration, SCM operations through trusted OS APIs, and a negative unsafe-location regression. Native installer acceptance is required before release. |
 | IPC-01 | Low, local availability | An authenticated slow reader could keep a reply/lease operation blocked without a write bound. | Fixed: bounded control reply writes and teardown when readiness cannot be delivered. A real blocked socket regression passed. A malicious local user can still occupy the one global routing lease. |
 | UPD-01 | Low, defense in depth | Initial release URL checking accepted an extra path/query within the trusted GitHub repository; staging used ordinary file creation. Signatures still prevented a demonstrated remote substitution. | Hardened: exact signed `vVERSION` path, one ASCII filename, no query/fragment/credentials/nonstandard port, fixed local filename, bounded semantic version, exclusive 0600 creation and symlink rejection. |
 | LOCAL-01 | Medium, conditional local attack | The verified installer remains owned by the desktop user until the OS installer reads it. Code already running as that same uid can modify user-owned staging after verification; normal OS admin consent is still required. | Explicit residual risk. 0700/0600 and immediate re-verification are not kernel-enforced root-side authentication. No new general-purpose privileged install IPC was added. |
-| PRIV-01 | Low, privacy | Initial macOS release agent/desktop binaries contained build-machine home/source paths. Package metadata included removable attributes and OS-managed `com.apple.provenance`. | Release path remapping and stage metadata cleanup are applied during final rebuilding; rebuilt artifacts must be scanned again. macOS can reattach a generic, non-identifying provenance attribute even to new files, so no claim of zero extended attributes is made. No credential or private-key pattern was found in the inspected payload. |
-| PRIV-02 | Low, privacy | Initial corresponding-source tar headers exposed the builder account name/uid/gid and timestamps. | Fixed in the source packager: normalize uid/gid to 0, clear account names/PAX metadata, use `SOURCE_DATE_EPOCH` (default 0), omit gzip filename and set gzip timestamp to 0. Final archive regeneration/reinspection is required. |
-| DEP-01 | Informational unsoundness, potentially a crash if reached | RustSec flags `glib` 0.18.5 `VariantStrIter` output-pointer mutability, RUSTSEC-2024-0429. Tauri's Linux GTK3 chain uses this version. | Exact two-line upstream fix backported as `0.18.5+driftnet.1` without changing the GTK3 API family. Official crate and all retained files are checksum-pinned; the backport guard passes. Optimized upstream iterator tests and native desktop compilation are required in Ubuntu CI before final acceptance. |
+| PRIV-01 | Low, privacy | Initial macOS release agent/desktop binaries contained build-machine home/source paths. Package metadata included removable attributes and OS-managed `com.apple.provenance`. | Fixed build-path disclosure: final 29-file expanded package scan found no actual builder Unix/Windows home path, private-key/token pattern or Discord Local text. Stage metadata cleanup is applied. macOS reattached one identical 11-byte opaque provenance value across expanded files; it contained no readable builder path/secret match. No claim of zero extended attributes is made. |
+| PRIV-02 | Low, privacy | Initial corresponding-source tar headers exposed the builder account name/uid/gid and timestamps. | Fixed and rechecked: all 4,413 final archive members have uid/gid 0, empty owner/group names and mtime 0; gzip filename is absent and mtime 0. Only PAX path metadata remains. No unsafe member/link path was present. |
+| DEP-01 | Informational unsoundness, potentially a crash if reached | RustSec flags `glib` 0.18.5 `VariantStrIter` output-pointer mutability, RUSTSEC-2024-0429. Tauri's Linux GTK3 chain uses this version. | Exact two-line upstream fix backported as `0.18.5+driftnet.1` without changing the GTK3 API family. Official crate and all retained files are checksum-pinned; the backport guard passes. Optimized upstream iterator regressions and Ubuntu native desktop compilation passed in checks run 42371588637. That overall run still had a Windows failure; the Linux success is not an all-platform pass. |
 | REL-01 | Low, release integrity usability | The initial `dist/SHA256SUMS.txt` named older development artifacts. | Do not publish it unchanged. Regenerate checksums after the final packages, source archive and signatures are complete. Checksums alone are not authenticity signatures. |
 
 ## Repository, history and package privacy
@@ -42,10 +46,14 @@ Observed checks, without printing matching values:
 
 - GitHub metadata reported `ernilmz/driftnet` **PRIVATE**; the remote URL contained
   no credentials and only `main` was advertised at the time of the scan.
-- All 1,760 reachable historical blobs were checked for private-key blocks, GitHub,
+- All 1,760 initial reachable historical blobs were checked for private-key blocks, GitHub,
   AWS and Discord token patterns, credential-bearing URLs and personal home paths.
   Additional bounded Base64 decoding checked for wrapped private-key envelopes;
   Slack/OpenAI token patterns were also checked.
+- A follow-up scan of all ten commits/1,938 historical blobs through `43b8340`
+  found no production-secret or actual builder-home-path match. It also checked
+  Base64 private-key envelopes; only the same three public signature fixtures
+  matched the broad signature-comment pattern.
 - No production credential/private-key match was identified. Credential-bearing
   URLs were synthetic policy/upstream test data. The two source home-path matches
   were in pinned upstream benchmark/tests, rather than private user files.
@@ -55,18 +63,41 @@ Observed checks, without printing matching values:
 - One unreachable local blob was separately scanned without a secret pattern hit.
   Git authors used a GitHub noreply address. No tracked `.p12`, `.pfx`, private
   `.key`, account capture, packet capture or log artifact was identified.
-- The inspected macOS package expanded to 24 files with expected app/helper/license
-  resources, not user profiles, browser databases or a private signing key.
-  Build paths and provenance metadata are recorded above as privacy findings.
+- The initial macOS package expanded to 24 files. Its rebuilt, hardened successor
+  expanded to 29 files with expected app/helper/license resources, not user profiles,
+  browser databases or a private signing key. No actual builder-home, credential
+  pattern or Discord Local text was found. The packaged `Driftnet-LICENSE.txt`
+  exactly matches the current neutral contributor MIT license with the explicit
+  GPL-router exception; GLib license/backport notices are included.
 - The initial corresponding-source archive contained 4,411 members, no absolute
   or parent-traversing member/link paths, and no actual builder-home, token or
   private-key content matches. Owner metadata still needed normalization.
+- The final normalized archive has 4,413 members with no owner account names or
+  unsafe paths/links. Its 4,212 regular files were also scanned with no private-key,
+  provider-token or actual builder-home-path match. Offline helper builds from that extracted archive passed
+  Darwin arm64, Windows amd64, Linux amd64 and Linux arm64 with vendored dependencies.
+
+The rebuilt macOS BOM records root uid/gid 0 for the privileged helper directory
+and files. Network/proxy helpers are 0755; the uninstall helper is 0700. Installed
+paths have the same protected ownership/modes, are not symlinks, and installed
+desktop/agent/router bytes match the final package payload. This checks the
+reviewed installed state rather than assuming extraction permissions prove it.
+
+| Reviewed final artifact | SHA-256 |
+| --- | --- |
+| `Driftnet-1.0.0-macOS.pkg` | `35c9608501137c16e5a8db9f1f538b0d8dd391e374064d7ae96adb2d9f57d30f` |
+| `Driftnet-1.0.0-Router-Source.tar.gz` | `d469ac634d9b156a30f79faad61d0bd9db9e55ee19fd0be254253c289ca8fbc7` |
 
 Pattern scanning cannot establish that every possible secret is absent. It does
 not inspect GitHub's hidden infrastructure, external developer backups, previously
 shared screenshots/chats or a compromised account. No private credential values
 were uploaded as part of these checks. Final Windows/Linux payload inspection and
 post-rebuild checks must be recorded separately.
+At this review point, `dist/updates` still held signatures for the earlier
+development artifacts. It is not approved for publication: all final platform
+installers and their complete manifest must be regenerated, signed and checked
+together after the native release gates pass. The repository remains private;
+the owner's permission to make it public is conditional on that completion.
 
 ## Update attack surface
 
@@ -124,6 +155,10 @@ quietly leaves Access unchanged; no token-based workaround is bundled.
   original files are preserved; registry-only `.cargo_vcs_info.json` was omitted.
   `scripts/verify-glib-patch.py` checks every file and reverses the exact two-line
   fix to reproduce the upstream source hash. See [backport provenance](../native/patches/README.md).
+- Ubuntu's optimized iterator/backport step and complete native desktop job passed
+  in [checks run 42371588637](https://github.com/ernilmz/driftnet/actions/runs/42371588637)
+  at `39ca446`. The macOS job also passed; Windows in that checks run failed.
+  Separate successful Windows diagnostic jobs do not convert that run to green.
 - `npm audit` including development dependencies and production-only each reported
   zero advisories for the locked UI dependency set at review time.
 - `cargo-audit` 0.22.2 checked 512 locked dependencies against RustSec database

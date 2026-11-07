@@ -41,6 +41,9 @@ go=env.get('DRIFT_GO','go')
 # supported targets. The untouched upstream source remains hash-verified above.
 subprocess.run([go,'mod','edit','-require=github.com/Microsoft/go-winio@v0.6.2'],cwd=build,env=env,check=True)
 subprocess.run([go,'mod','download','github.com/Microsoft/go-winio@v0.6.2'],cwd=build,env=env,check=True)
+# Minimum fixed HTTP/2 dependency for GO-2026-6603/6610/6611/6612/6617.
+# Apply only to the generated stage; preserve the hash-pinned upstream tree.
+subprocess.run([go,'get','golang.org/x/net@v0.60.0'],cwd=build,env=env,check=True)
 output=root/'apps/desktop/binaries'/('drift-router-'+args.target+('.exe' if platform=='windows' else ''))
 subprocess.run([go,'build','-mod=mod','-trimpath','-tags','with_gvisor',('-ldflags=-s -w -H windowsgui' if platform=='windows' else '-ldflags=-s -w'),'-o',str(output),'./cmd/drift-router'],cwd=build,env=env,check=True)
 print(output)
