@@ -1,0 +1,16 @@
+[workspace]
+members = ["crates/drift-core", "crates/drift-engine", "crates/drift-policy-ffi", "crates/drift-network", "crates/drift-agent", "apps/desktop"]
+resolver = "2"
+
+[workspace.package]
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+tempfile = "3"
+thiserror = "2"

@@ -1,0 +1,13 @@
+[package]
+name = "drift-agent"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+drift-core = { path = "../drift-core" }
+drift-engine = { path = "../drift-engine" }
+drift-network = { path = "../drift-network" }
+serde.workspace = true
+serde_json.workspace = true
+tokio = { version = "1", features = ["rt-multi-thread", "io-util", "io-std", "macros", "signal", "time"] }

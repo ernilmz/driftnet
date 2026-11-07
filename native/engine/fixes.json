@@ -1,0 +1,14 @@
+[
+  {
+    "source": "desync.c",
+    "reason": "Preserve unsent tail after a short nonblocking send; otherwise on_tunnel discards bytes.",
+    "before": "        if (send(sfd, buffer + lp, n - lp, 0) < 0) {\n            if (get_e() == EAGAIN) {\n                return lp - offset;\n            }\n            uniperror(\"send\");\n            return -1;\n        }\n",
+    "after": "        ssize_t sent = send(sfd, buffer + lp, n - lp, 0);\n        if (sent < 0) {\n            if (get_e() == EAGAIN) {\n                return lp - offset;\n            }\n            uniperror(\"send\");\n            return -1;\n        }\n        // Drift fix: the nonblocking socket may accept only part of the tail.\n        // Return the actual count so on_tunnel retains and retries the rest.\n        return lp + sent - offset;\n"
+  },
+  {
+    "source": "extend.c",
+    "reason": "Bind outbound TCP/UDP to the pre-tunnel interface so the local router cannot reassemble the engine\u2019s wire fragmentation.",
+    "before": "int socket_mod(int fd)\n{",
+    "after": "extern int drift_bind_outbound(int fd);\nint socket_mod(int fd)\n{\n    if (drift_bind_outbound(fd) < 0) return -1;"
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "bundle": {
+    "targets": [
+      "nsis"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "perMachine",
+        "languages": [
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "startMenuFolder": "Drift",
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "../../native/windows/installer-hooks.nsh"
+      }
+    },
+    "resources": {
+      "../../licenses/Wintun-LICENSE.txt": "licenses/Wintun-LICENSE.txt"
+    }
+  }
+}

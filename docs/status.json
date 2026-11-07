@@ -1,0 +1,37 @@
+{
+  "version": "0.4.1-rc.1",
+  "selected_design": 1,
+  "design_revision": "refined-terminal-amber",
+  "backend": "compatibility_proxy_and_optional_app_launch",
+  "macos_installed_verified": true,
+  "platform_routing_available": {
+    "macos_compatibility": true,
+    "windows_compatibility": "compiled_pending_device_retest",
+    "arbitrary_app_interception": false,
+    "udp": false
+  },
+  "release_ready": false,
+  "github_uploaded": false,
+  "verification": {
+    "core_tests": 15,
+    "network_tests": 4,
+    "ffi_tests": 2,
+    "engine_integration_tests": 4,
+    "backpressured_4mib_consecutive_passes": 20,
+    "clippy": "passed",
+    "frontend_build": "passed",
+    "macos_system_pac_and_urlsession": "passed",
+    "macos_off_restores_full_proxy_baseline": "passed",
+    "discord_download_range": "HTTP206_65536_bytes",
+    "generic_site_only_session": "passed",
+    "windows_runtime": "initial_missing_Discord_bug_fixed_retest_pending",
+    "voice": "pending_user_unavailable"
+  },
+  "remaining": [
+    "Windows fresh install/update/uninstall and native UI verification",
+    "Actual Discord voice/video",
+    "Arbitrary non-proxy-aware app routing",
+    "IPv6-only public DNS fallback",
+    "Production signing/notarization"
+  ]
+}

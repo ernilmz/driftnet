@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Driftnet
+Comment=Selective application and website access
+Exec=/usr/bin/driftnet
+Icon=driftnet
+Terminal=false
+Categories=Network;Utility;
+StartupNotify=true
+StartupWMClass=Driftnet

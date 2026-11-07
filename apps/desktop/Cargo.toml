@@ -1,0 +1,33 @@
+[package]
+name = "drift-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+drift-core = { path = "../../crates/drift-core" }
+drift-engine = { path = "../../crates/drift-engine" }
+drift-network = { path = "../../crates/drift-network" }
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+tauri = { version = "~2.12.5", features = ["tray-icon", "image-png", "macos-private-api"] }
+rfd = "0.15"
+plist = "1"
+base64 = "0.22"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "native-tls", "json"] }
+minisign-verify = "0.3"
+semver = "1"
+tempfile.workspace = true
+
+tauri-plugin-single-instance = "2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = ["NSFont", "NSStatusItem", "NSStatusBarButton", "NSControl", "NSScreen", "NSWindow", "NSView"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_UI_Shell", "Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }

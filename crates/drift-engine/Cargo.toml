@@ -1,0 +1,13 @@
+[package]
+name = "drift-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+[[bin]]
+name = "drift-engine-owner-fixture"
+path = "tests/support/owner.rs"
+test = false

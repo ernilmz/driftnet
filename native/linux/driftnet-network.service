@@ -1,0 +1,29 @@
+[Unit]
+Description=Driftnet application networking
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/driftnet/drift-router --serve
+Restart=on-failure
+RestartSec=3
+RuntimeDirectory=driftnet
+RuntimeDirectoryMode=0755
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/driftnet
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET
+DevicePolicy=closed
+DeviceAllow=/dev/net/tun rw
+
+[Install]
+WantedBy=multi-user.target

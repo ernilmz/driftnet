@@ -1,0 +1,14 @@
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/drift-engine",
+      "binaries/drift-agent",
+      "binaries/drift-proxyctl",
+      "binaries/drift-router"
+    ],
+    "resources": {
+      "resources/Drift-Uninstall.pkg": "uninstall/Drift-Uninstall.pkg",
+      "../../native/macos/uninstall.sh": "drift-uninstall.sh"
+    }
+  }
+}

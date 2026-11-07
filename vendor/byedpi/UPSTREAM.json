@@ -1,0 +1,93 @@
+{
+  "repository": "https://github.com/hufrea/byedpi",
+  "commit": "e2684772fbda45f2ff4fc220922a010370534216",
+  "version": "17.3",
+  "archive_sha256": "5b81f8cc89da88bb46bc5a4492974ea71f415a0a84a831e735016bfa4ac023eb",
+  "modifications": [],
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "18c854c6c25dffefe4b522cf1bdf5d15278a25ca785948258bddb94393f575eb"
+    },
+    {
+      "path": "Makefile",
+      "sha256": "0f2821e8733637ff4d46d9e26c2c3d4ac8f30be2993b1875b5fca6a9c83abb5e"
+    },
+    {
+      "path": "README.md",
+      "sha256": "628eabe0c603ac120e2b1655a6a0f8846431dd1c579fefe17dd72859d9f1eccf"
+    },
+    {
+      "path": "conev.c",
+      "sha256": "8d2bf7e297d70a6cba4a842afae4f984bd965bacab7eaf7be8aae914d2cfc0c9"
+    },
+    {
+      "path": "conev.h",
+      "sha256": "6a09eecf7054495e2ba69238a54efd045b205b004a4ad9f7ab371c750eb0f1b5"
+    },
+    {
+      "path": "desync.c",
+      "sha256": "453ab1d38eb5355ffaf81c2cd6c7fe107c28000815a531f6314284bd1e347344"
+    },
+    {
+      "path": "desync.h",
+      "sha256": "4a21b9ddb9e52f847bf614ce3aafc30d3173aafacf278932cb7c7fb7c46e2468"
+    },
+    {
+      "path": "error.h",
+      "sha256": "25042f5ebccb90167ba233318e403308a52fb5cfa914cd5ae2a9a1ab93bcb3ab"
+    },
+    {
+      "path": "extend.c",
+      "sha256": "23cd5814c432f0bac09900d92f6e7b2b80e071e90f8c53ad74dfba4bb4493038"
+    },
+    {
+      "path": "extend.h",
+      "sha256": "ef091ae220f6178a1925a6c2d9a04493104d3ae65464df9223a300a8b8235c4f"
+    },
+    {
+      "path": "kavl.h",
+      "sha256": "9ab6853ff9765b4f274a326bb599d6d59e0b2b963b42115bbcda95e7ee985bd5"
+    },
+    {
+      "path": "main.c",
+      "sha256": "55da16de1d2002200f5d06a64c0dcbd7491941fc1cf90bd655fa7a96601d5133"
+    },
+    {
+      "path": "mpool.c",
+      "sha256": "97cb8d485f129f08defc95142806f76b20fd19911feac7ed09d507e4edfd2ce2"
+    },
+    {
+      "path": "mpool.h",
+      "sha256": "376781ceaf1984cab94427b7018bf3205314526ecc1db25ba0f13db4da491565"
+    },
+    {
+      "path": "packets.c",
+      "sha256": "e06a49ec17dfb3b3591547898243f25da40b7f9dfc43ab40f860506cb12f841e"
+    },
+    {
+      "path": "packets.h",
+      "sha256": "13fd58e1357a439ccfbfbe54d3b674dede31e0687f46e17e612ec3b6a5adbe4a"
+    },
+    {
+      "path": "params.h",
+      "sha256": "2d280a5f227195e0c12d8889d08d35f2a434bdf53d059db2fe00829399be421a"
+    },
+    {
+      "path": "proxy.c",
+      "sha256": "f78c909f5bd03a555edb76705cceeaf6627cb025138a6413698d130c6f76a15b"
+    },
+    {
+      "path": "proxy.h",
+      "sha256": "4453d4c70807f50119a496d8a0507495748c7000921c601fd9fca140793ed146"
+    },
+    {
+      "path": "win_service.c",
+      "sha256": "8affd5e2ef29c63d5ed08bb272400358cc3208e9987c808859fc1e6096eecefa"
+    },
+    {
+      "path": "win_service.h",
+      "sha256": "6770a7c4cd6769d33af165f1d3bd3dde9d841ed0a7d6dcb79f5f15163d21ac25"
+    }
+  ]
+}

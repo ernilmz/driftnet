@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+case "$1" in remove|upgrade|deconfigure)
+    if [ -d /run/systemd/system ]; then systemctl stop driftnet-network.service || true; fi
+    ;;
+esac

@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+if [ -d /run/systemd/system ]; then
+    case "$1" in remove|purge) systemctl disable driftnet-network.service >/dev/null 2>&1 || true;; esac
+    systemctl daemon-reload
+fi
+# Per-user rules and proxy recovery journals deliberately survive uninstall.

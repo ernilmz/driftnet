@@ -1,0 +1,133 @@
+name: checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  policy-and-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: vendor/sing-box/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: python3 scripts/build-engine.py
+      - run: cargo fmt --all -- --check
+      - run: cargo test --locked -p drift-core -p drift-network -p drift-policy-ffi -p drift-agent
+      - run: cargo clippy --locked -p drift-core -p drift-engine -p drift-network -p drift-policy-ffi -p drift-agent --all-targets -- -D warnings
+      - name: Exercise real engine sockets and cleanup
+        run: python3 scripts/test-engine.py
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: vendor/sing-box/go.sum
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Install native Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libcap2-bin pkg-config
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+      - name: Build networking sidecars on Windows
+        if: runner.os == 'Windows'
+        run: python scripts/build-sidecars.py --release
+        env:
+          DRIFT_ENGINE_CC: C:/msys64/mingw64/bin/gcc.exe
+      - name: Build networking sidecars on macOS
+        if: runner.os == 'macOS'
+        run: python3 scripts/build-sidecars.py --release
+      - name: Build networking sidecars on Linux
+        if: runner.os == 'Linux'
+        run: python3 scripts/build-sidecars.py --release
+      - name: Native router tests
+        working-directory: target/router-src
+        run: go test -tags with_gvisor ./cmd/drift-router ./common/process
+      - run: npm ci
+        working-directory: ui
+      - run: npm run format:check
+        working-directory: ui
+      - run: npm run build
+        working-directory: ui
+      - run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - run: cargo test --locked --workspace
+      - name: Native engine integration
+        run: python scripts/test-engine.py
+      - name: Bundle optimized macOS app
+        if: runner.os == 'macOS'
+        working-directory: apps/desktop
+        run: ../../ui/node_modules/.bin/tauri build --bundles app
+      - name: Sign development macOS app and build single installer
+        if: runner.os == 'macOS'
+        run: |
+          python3 scripts/sign-dev-macos.py --app target/release/bundle/macos/Driftnet.app
+          target/release/bundle/macos/Driftnet.app/Contents/MacOS/drift-desktop --check-engine
+          python3 scripts/build-macos-installer.py --app target/release/bundle/macos/Driftnet.app
+      - name: Upload macOS installer
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Driftnet-macOS-native
+          path: dist/Driftnet-*-macOS.pkg
+          if-no-files-found: error
+          retention-days: 14
+      - name: Bundle optimized Windows installer
+        if: runner.os == 'Windows'
+        working-directory: apps/desktop
+        run: ../../ui/node_modules/.bin/tauri build --bundles nsis
+      - name: Build native Linux desktop
+        if: runner.os == 'Linux'
+        working-directory: apps/desktop
+        run: ../../ui/node_modules/.bin/tauri build --no-bundle
+      - name: Package native Linux application and helper
+        if: runner.os == 'Linux'
+        run: python3 scripts/package-linux.py
+      - name: Verify native Linux installation and real TUN routing
+        if: runner.os == 'Linux'
+        run: python3 scripts/test-linux-installer.py --installer dist/Driftnet-*-linux-amd64.deb
+      - name: Upload Linux package
+        if: always() && runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Driftnet-Linux-native
+          path: |
+            dist/Driftnet-*-linux-*.deb
+            target/linux-installer-test.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Verify native Windows installation and real TUN routing
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem target/release/bundle/nsis/*-setup.exe)
+          if ($packages.Count -ne 1) { throw "Expected one NSIS package, found $($packages.Count)" }
+          ./scripts/test-windows-installer.ps1 -Installer $packages[0].FullName
+      - name: Upload Windows installer and native test evidence
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Driftnet-Windows-native
+          path: |
+            target/release/bundle/nsis/*-setup.exe
+            target/windows-installer-test.json
+          if-no-files-found: warn
+          retention-days: 14

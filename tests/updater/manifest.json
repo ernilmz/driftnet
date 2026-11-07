@@ -1,0 +1,9 @@
+{
+  "version": "0.0.0-fixture",
+  "platforms": {
+    "darwin-aarch64": {
+      "url": "https://github.com/ernilmz/driftnet/releases/download/v0.0.0-fixture/fixture.pkg",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRRXBPQzIxSkhyNEFlcFBUTjRNMWRPWWxNSFVSQlpJV3p5ZUxtUm1aTDdCYU5ib254Q3ZOQ0FEZUhaK29rVmZJTHZBZTJmVnFCY1FWTG5YdzZBS04zTTNzZlppbWYxY1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MDQ5NzE3CWZpbGU6Zml4dHVyZS5wa2cJdmVyc2lvbjowLjAuMC1maXh0dXJlCnJrdWk4eVd5Y1l0eVAvQTBXWmVodGpJNUJBd2ZpTTNRREZlMDIyQnJBaE1RK296TmVLVGlmY3JJOTBLOUlzRDVqeU1xSk1ORGxDRG9YKzhOOHBFREJBPT0K"
+    }
+  }
+}
