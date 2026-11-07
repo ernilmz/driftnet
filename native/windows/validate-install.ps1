@@ -11,7 +11,7 @@ $PSModuleAutoLoadingPreference = 'ModuleQualified'
 # environment. No existing executable or registry command is run here.
 $root = [Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)
 $directory = [IO.Path]::GetFullPath($InstallDirectory).TrimEnd('\')
-$allowed = @((Join-Path $root 'Driftnet'), (Join-Path $root 'Drift'))
+$allowed = @([IO.Path]::Combine($root, 'Driftnet'), [IO.Path]::Combine($root, 'Drift'))
 if ($directory -notin $allowed) { throw 'Install Driftnet in its protected Program Files location.' }
 $trusted = @('S-1-5-18', 'S-1-5-32-544', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')
 function Assert-ProtectedItem([IO.FileSystemInfo]$Item) {
@@ -48,7 +48,7 @@ if ($null -ne $service) {
             $service.WaitForStatus([ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(25))
         }
     } finally { $service.Dispose() }
-    & (Join-Path ([Environment]::SystemDirectory) 'sc.exe') delete DriftNetwork | Out-Null
+    $null = & ([IO.Path]::Combine([Environment]::SystemDirectory, 'sc.exe')) delete DriftNetwork
     if ($LASTEXITCODE -ne 0) { throw 'The networking service could not be removed.' }
     Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 500
 }

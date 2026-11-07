@@ -1,5 +1,5 @@
 ; Generated from validate-install.ps1. Keep the readable source in sync.
-; SHA256: 59df8a683d8804a2fab80f4bdb686694282d85adf2aaa07b7939116a925cbb87
+; SHA256: 25bd27baed4cd442a6458de3fcf7862cf1ccd15c9421f88153be3f237bf95bf6
 !macro DRIFT_WRITE_VALIDATOR
   FileOpen $2 "$PLUGINSDIR\driftnet-validate-install.ps1" w
   ${If} $2 == ""
@@ -18,7 +18,7 @@
   FileWrite $2 "# environment. No existing executable or registry command is run here.$\r$\n"
   FileWrite $2 "$$root = [Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFiles)$\r$\n"
   FileWrite $2 "$$directory = [IO.Path]::GetFullPath($$InstallDirectory).TrimEnd('\')$\r$\n"
-  FileWrite $2 "$$allowed = @((Join-Path $$root 'Driftnet'), (Join-Path $$root 'Drift'))$\r$\n"
+  FileWrite $2 "$$allowed = @([IO.Path]::Combine($$root, 'Driftnet'), [IO.Path]::Combine($$root, 'Drift'))$\r$\n"
   FileWrite $2 "if ($$directory -notin $$allowed) { throw 'Install Driftnet in its protected Program Files location.' }$\r$\n"
   FileWrite $2 "$$trusted = @('S-1-5-18', 'S-1-5-32-544', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')$\r$\n"
   FileWrite $2 "function Assert-ProtectedItem([IO.FileSystemInfo]$$Item) {$\r$\n"
@@ -55,7 +55,7 @@
   FileWrite $2 "            $$service.WaitForStatus([ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(25))$\r$\n"
   FileWrite $2 "        }$\r$\n"
   FileWrite $2 "    } finally { $$service.Dispose() }$\r$\n"
-  FileWrite $2 "    & (Join-Path ([Environment]::SystemDirectory) 'sc.exe') delete DriftNetwork | Out-Null$\r$\n"
+  FileWrite $2 "    $$null = & ([IO.Path]::Combine([Environment]::SystemDirectory, 'sc.exe')) delete DriftNetwork$\r$\n"
   FileWrite $2 "    if ($$LASTEXITCODE -ne 0) { throw 'The networking service could not be removed.' }$\r$\n"
   FileWrite $2 "    Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 500$\r$\n"
   FileWrite $2 "}$\r$\n"
