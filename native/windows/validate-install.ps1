@@ -18,6 +18,14 @@ $directory = [IO.Path]::GetFullPath($InstallDirectory).TrimEnd('\')
 $allowed = @([IO.Path]::Combine($root, 'Driftnet'), [IO.Path]::Combine($root, 'Drift'))
 if ($directory -notin $allowed) { throw 'Install Driftnet in its protected Program Files location.' }
 $trusted = @('S-1-5-18', 'S-1-5-32-544', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')
+$shortcutTrusted = @($trusted)
+$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+try {
+    $principal = [Security.Principal.WindowsPrincipal]::new($currentIdentity)
+    if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        $shortcutTrusted += $currentIdentity.User.Value
+    }
+} finally { $currentIdentity.Dispose() }
 function Assert-ProtectedItem([IO.FileSystemInfo]$Item) {
     if (($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'The installation contains a reparse point. Remove the old installation before retrying.' }
     $acl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $Item.FullName
@@ -35,10 +43,11 @@ function Assert-ShortcutDirectory([IO.DirectoryInfo]$Item) {
     # deletion, ownership, ACL, and reparse-point checks for these ancestors.
     if (($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Shortcut directory is a reparse point.' }
     $acl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $Item.FullName
-    if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted) { throw 'Shortcut directory has an unsafe owner.' }
+    if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $shortcutTrusted) { throw 'Shortcut directory has an unsafe owner.' }
     foreach ($rule in $acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
         if ($rule.AccessControlType -ne 'Allow' -or ($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0) { continue }
-        if (([int64]$rule.FileSystemRights -band 0x500d0150) -ne 0 -and $rule.IdentityReference.Value -notin $trusted) {
+        if (([int64]$rule.FileSystemRights -band 0x500d0150) -ne 0 -and $rule.IdentityReference.Value -notin $shortcutTrusted) {
+            Microsoft.PowerShell.Utility\Write-Verbose "Rejected shortcut directory ACL: $($Item.FullName) / $($rule.IdentityReference.Value) / $($rule.FileSystemRights)"
             throw 'Shortcut directory allows existing entries to be changed or deleted.'
         }
     }

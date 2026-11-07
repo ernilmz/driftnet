@@ -1,5 +1,5 @@
 ; Generated from validate-install.ps1. Keep the readable source in sync.
-; SHA256: 7c5353276ed34618c924e90b3cbbbba7196f908c53268483280edd42cb478288
+; SHA256: 0c926caad7920d81b983b15d583570937dc104e4754cc0c8133ba180b2648c39
 !macro DRIFT_WRITE_VALIDATOR
   FileOpen $2 "$PLUGINSDIR\driftnet-validate-install.ps1" w
   ${If} $2 == ""
@@ -25,6 +25,14 @@
   FileWrite $2 "$$allowed = @([IO.Path]::Combine($$root, 'Driftnet'), [IO.Path]::Combine($$root, 'Drift'))$\r$\n"
   FileWrite $2 "if ($$directory -notin $$allowed) { throw 'Install Driftnet in its protected Program Files location.' }$\r$\n"
   FileWrite $2 "$$trusted = @('S-1-5-18', 'S-1-5-32-544', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')$\r$\n"
+  FileWrite $2 "$$shortcutTrusted = @($$trusted)$\r$\n"
+  FileWrite $2 "$$currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()$\r$\n"
+  FileWrite $2 "try {$\r$\n"
+  FileWrite $2 "    $$principal = [Security.Principal.WindowsPrincipal]::new($$currentIdentity)$\r$\n"
+  FileWrite $2 "    if ($$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {$\r$\n"
+  FileWrite $2 "        $$shortcutTrusted += $$currentIdentity.User.Value$\r$\n"
+  FileWrite $2 "    }$\r$\n"
+  FileWrite $2 "} finally { $$currentIdentity.Dispose() }$\r$\n"
   FileWrite $2 "function Assert-ProtectedItem([IO.FileSystemInfo]$$Item) {$\r$\n"
   FileWrite $2 "    if (($$Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'The installation contains a reparse point. Remove the old installation before retrying.' }$\r$\n"
   FileWrite $2 "    $$acl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $$Item.FullName$\r$\n"
@@ -42,10 +50,11 @@
   FileWrite $2 "    # deletion, ownership, ACL, and reparse-point checks for these ancestors.$\r$\n"
   FileWrite $2 "    if (($$Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Shortcut directory is a reparse point.' }$\r$\n"
   FileWrite $2 "    $$acl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $$Item.FullName$\r$\n"
-  FileWrite $2 "    if ($$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $$trusted) { throw 'Shortcut directory has an unsafe owner.' }$\r$\n"
+  FileWrite $2 "    if ($$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $$shortcutTrusted) { throw 'Shortcut directory has an unsafe owner.' }$\r$\n"
   FileWrite $2 "    foreach ($$rule in $$acl.GetAccessRules($$true, $$true, [Security.Principal.SecurityIdentifier])) {$\r$\n"
   FileWrite $2 "        if ($$rule.AccessControlType -ne 'Allow' -or ($$rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0) { continue }$\r$\n"
-  FileWrite $2 "        if (([int64]$$rule.FileSystemRights -band 0x500d0150) -ne 0 -and $$rule.IdentityReference.Value -notin $$trusted) {$\r$\n"
+  FileWrite $2 "        if (([int64]$$rule.FileSystemRights -band 0x500d0150) -ne 0 -and $$rule.IdentityReference.Value -notin $$shortcutTrusted) {$\r$\n"
+  FileWrite $2 "            Microsoft.PowerShell.Utility\Write-Verbose $\"Rejected shortcut directory ACL: $$($$Item.FullName) / $$($$rule.IdentityReference.Value) / $$($$rule.FileSystemRights)$\"$\r$\n"
   FileWrite $2 "            throw 'Shortcut directory allows existing entries to be changed or deleted.'$\r$\n"
   FileWrite $2 "        }$\r$\n"
   FileWrite $2 "    }$\r$\n"
