@@ -37,30 +37,80 @@
     SetOutPath "$INSTDIR"
   !endif
 !macroend
-!macro NSIS_HOOK_PREINSTALL
-  !insertmacro DRIFT_VALIDATE_INSTALL Prepare
-  ; Remove only the former product shortcuts that target this exact installed
-  ; executable. Preserve unrelated shortcuts and all user configuration.
-  ; Silent installation sections can execute on a worker thread. COM must be
-  ; initialized on that thread before the ShellLink helper can inspect a link.
+!macro DRIFT_IS_SHORTCUT_TARGET SHORTCUT TARGET
+  ; Read the resolved target, not SLGP_RAWPATH (which can retain short names or
+  ; environment syntax), then normalize both existing paths with Windows.
   Push $4
+  Push $5
+  Push $6
+  StrCpy $5 0
   System::Call 'ole32::CoInitializeEx(p 0, i 2) i.r4'
-  !insertmacro IsShortcutTarget "$SMPROGRAMS\Drift\Drift.lnk" "$INSTDIR\drift-desktop.exe"
-  Pop $0
-  ${If} $0 = 1
-    Delete "$SMPROGRAMS\Drift\Drift.lnk"
-    RMDir "$SMPROGRAMS\Drift"
-  ${EndIf}
-  !insertmacro IsShortcutTarget "$DESKTOP\Drift.lnk" "$INSTDIR\drift-desktop.exe"
-  Pop $0
-  ${If} $0 = 1
-    Delete "$DESKTOP\Drift.lnk"
+  ${If} ${FileExists} "${SHORTCUT}"
+    !insertmacro ComHlpr_CreateInProcInstance ${CLSID_ShellLink} ${IID_IShellLink} r0 ".r6"
+    ${If} $0 P<> 0
+      StrCpy $1 0
+      ${IUnknown::QueryInterface} $0 '("${IID_IPersistFile}", .r1).r6'
+      ${If} $1 P<> 0
+        ${IPersistFile::Load} $1 '("${SHORTCUT}", ${STGM_READ}).r6'
+        ${If} $6 = 0
+          StrCpy $2 ""
+          ${IShellLink::GetPath} $0 '(.r2, ${MAX_PATH}, 0, 0).r6'
+          ${If} $6 >= 0
+          ${AndIf} $2 != ""
+            ExpandEnvStrings $2 "$2"
+            ClearErrors
+            GetFullPathName $2 "$2"
+            ${IfNot} ${Errors}
+              GetFullPathName $3 "${TARGET}"
+              ${IfNot} ${Errors}
+                ${If} $2 == $3
+                  StrCpy $5 1
+                ${Else}
+                  ; Match existing short/long aliases as well. Absolute path
+                  ; comparison above also works after uninstall deletes files.
+                  ClearErrors
+                  GetFullPathName /SHORT $2 "$2"
+                  ${IfNot} ${Errors}
+                    GetFullPathName /SHORT $3 "${TARGET}"
+                    ${IfNot} ${Errors}
+                    ${AndIf} $2 == $3
+                      StrCpy $5 1
+                    ${EndIf}
+                  ${EndIf}
+                ${EndIf}
+              ${EndIf}
+            ${EndIf}
+          ${EndIf}
+        ${EndIf}
+        ${IUnknown::Release} $1 '.r6'
+      ${EndIf}
+      ${IUnknown::Release} $0 '.r6'
+    ${EndIf}
   ${EndIf}
   ${If} $4 = 0
   ${OrIf} $4 = 1
     System::Call 'ole32::CoUninitialize()'
   ${EndIf}
+  StrCpy $0 $5
+  Pop $6
+  Pop $5
   Pop $4
+  Push $0
+!macroend
+!macro DRIFT_DELETE_MATCHING_SHORTCUT SHORTCUT
+  !insertmacro DRIFT_IS_SHORTCUT_TARGET "${SHORTCUT}" "$INSTDIR\drift-desktop.exe"
+  Pop $0
+  ${If} $0 = 1
+    Delete "${SHORTCUT}"
+  ${EndIf}
+!macroend
+!macro NSIS_HOOK_PREINSTALL
+  !insertmacro DRIFT_VALIDATE_INSTALL Prepare
+  ; Remove only the former product shortcuts that target this exact installed
+  ; executable. Preserve unrelated shortcuts and all user configuration.
+  !insertmacro DRIFT_DELETE_MATCHING_SHORTCUT "$SMPROGRAMS\Drift\Drift.lnk"
+  RMDir "$SMPROGRAMS\Drift"
+  !insertmacro DRIFT_DELETE_MATCHING_SHORTCUT "$DESKTOP\Drift.lnk"
 !macroend
 !macro NSIS_HOOK_POSTINSTALL
   ExecWait '"$INSTDIR\drift-router.exe" --install-service' $0

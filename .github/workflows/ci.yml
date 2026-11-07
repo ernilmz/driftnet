@@ -80,6 +80,8 @@ jobs:
       - name: Audit the native router with pinned govulncheck
         working-directory: target/router-src
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -tags=with_gvisor ./cmd/drift-router
+        env:
+          CGO_ENABLED: '0'
       - name: Verify macOS privileged installer path protection
         if: runner.os == 'macOS'
         run: python3 scripts/test-macos-package-security.py

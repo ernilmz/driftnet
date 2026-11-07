@@ -4,5 +4,5 @@
   "path": "crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi",
   "upstream_sha256": "d00089d3b1a2c4a30d7b6e098079100cb8f25e980f84d4515aca4597b95e967d",
   "license": "MIT",
-  "modifications": "Keep UNINSTKEY and MANUPRODUCTKEY compatible with already-shipped Drift installations; branding remains Driftnet. Remove the directory picker and validate the protected Program Files installation before upgrade pages can invoke an older uninstaller."
+  "modifications": "Keep UNINSTKEY and MANUPRODUCTKEY compatible with already-shipped Drift installations; branding remains Driftnet. Remove the directory picker and validate the protected Program Files installation before upgrade pages can invoke an older uninstaller. Use the COM-initialized resolved-path shortcut comparison helper in all installer and uninstaller callers."
 }

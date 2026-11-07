@@ -26,7 +26,7 @@ $results = [ordered]@{
     installer = [IO.Path]::GetFileName($Installer)
     install = $false; runtimeImports = $false; protectedService = $false; packagedEngine = $false; repairPreservesRules = $false; legacyUpgrade = $false
     selectedRoute = $false; unselectedRoute = $false; leaseCleanup = $false; crashLeaseCleanup = $false
-    uninstall = $false; error = $null
+    uninstall = $false; shortcutCleanup = $false; error = $null
 }
 $lease = $null
 $engine = $null
@@ -122,6 +122,12 @@ try {
     & python (Join-Path $PSScriptRoot 'check-windows-imports.py') --directory $installDir --report (Join-Path $PSScriptRoot '../target/windows-imports.json')
     if ($LASTEXITCODE -ne 0) { throw 'Installed binaries require an external compiler runtime' }
     $results.runtimeImports = $true
+    $programs = [Environment]::GetFolderPath('CommonPrograms')
+    $installedShortcuts = @(
+        (Join-Path $programs 'Driftnet/Driftnet.lnk'),
+        (Join-Path $programs 'Driftnet.lnk'),
+        (Join-Path ([Environment]::GetFolderPath('CommonDesktopDirectory')) 'Driftnet.lnk')
+    ) | Where-Object { Test-Path $_ }
     # Registering a LocalSystem service from a user-writable path must fail,
     # leaving the existing protected service unchanged.
     $untrusted = Join-Path $env:RUNNER_TEMP ('DriftnetUntrusted-' + [guid]::NewGuid().ToString('N'))
@@ -167,6 +173,13 @@ try {
     if ((Get-ItemProperty $legacyKey).DisplayName -ne 'Driftnet') { throw 'Upgrade did not rebrand the existing uninstall entry' }
     if (Test-Path $newDuplicateKey) { throw 'Upgrade created a duplicate installed product entry' }
     $legacyShortcutRemoved = -not (Test-Path $legacyShortcut)
+    if (-not $legacyShortcutRemoved) {
+        $linkShell = New-Object -ComObject WScript.Shell
+        $link = $linkShell.CreateShortcut($legacyShortcut)
+        $results.legacyShortcutTarget = $link.TargetPath
+        [Runtime.InteropServices.Marshal]::FinalReleaseComObject($link) | Out-Null
+        [Runtime.InteropServices.Marshal]::FinalReleaseComObject($linkShell) | Out-Null
+    }
     Run-Checked $desktop @('--check-engine')
     $results.repairPreservesRules = $true
     $results.legacyUpgrade = $legacyShortcutRemoved
@@ -261,6 +274,8 @@ try {
     # exit before the final registry cleanup follows service removal.
     Wait-Until { -not (Test-Path $legacyKey) } 'product uninstall registry entry removal'
     Wait-Until { -not (Test-Path $desktop) -and -not (Test-Path $router) -and -not (Test-Path $enginePath) -and -not (Test-Path $agentPath) -and -not (Test-Path (Join-Path $installDir 'uninstall.exe')) } 'installed executables removal'
+    Wait-Until { @($installedShortcuts | Where-Object { Test-Path $_ }).Count -eq 0 } 'installed Start Menu and Desktop shortcuts removal'
+    $results.shortcutCleanup = $true
     if ([IO.File]::ReadAllText($rulesPath) -cne $fixture) { throw 'Uninstall unexpectedly removed user rules' }
     $results.uninstall = $true
     # Keep migration assertions after the data-plane checks so a cosmetic
