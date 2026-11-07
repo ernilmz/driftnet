@@ -894,6 +894,7 @@ dependencies = [
  "drift-network",
  "serde",
  "serde_json",
+ "static_vcruntime",
  "tokio",
 ]
 

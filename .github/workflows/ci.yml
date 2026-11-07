@@ -48,7 +48,7 @@ jobs:
           cache-dependency-path: ui/package-lock.json
       - name: Install native Linux desktop dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libcap2-bin pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf libssl-dev libcap2-bin pkg-config dconf-gsettings-backend dbus-daemon
       - uses: msys2/setup-msys2@v2
         id: msys2
         if: runner.os == 'Windows'
@@ -80,6 +80,9 @@ jobs:
         working-directory: ui
       - run: cargo clippy --locked --workspace --all-targets -- -D warnings
       - run: cargo test --locked --workspace
+      - name: Exercise isolated GNOME PAC settings and recovery
+        if: runner.os == 'Linux'
+        run: python3 scripts/test-linux-gnome-pac.py
       - name: Native engine integration
         run: python scripts/test-engine.py
       - name: Bundle optimized macOS app
@@ -139,5 +142,6 @@ jobs:
           path: |
             target/release/bundle/nsis/*-setup.exe
             target/windows-installer-test.json
+            target/windows-imports.json
           if-no-files-found: warn
           retention-days: 14

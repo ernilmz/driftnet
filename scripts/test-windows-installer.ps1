@@ -23,7 +23,7 @@ $savedRules = if (Test-Path $rulesPath) { [IO.File]::ReadAllBytes($rulesPath) } 
 $results = [ordered]@{
     os = [Environment]::OSVersion.VersionString
     installer = [IO.Path]::GetFileName($Installer)
-    install = $false; packagedEngine = $false; repairPreservesRules = $false; legacyUpgrade = $false
+    install = $false; runtimeImports = $false; packagedEngine = $false; repairPreservesRules = $false; legacyUpgrade = $false
     selectedRoute = $false; unselectedRoute = $false; leaseCleanup = $false; crashLeaseCleanup = $false
     uninstall = $false; error = $null
 }
@@ -114,10 +114,14 @@ try {
     $desktop = Join-Path $installDir 'drift-desktop.exe'
     $router = Join-Path $installDir 'drift-router.exe'
     $enginePath = Join-Path $installDir 'drift-engine.exe'
-    foreach ($path in @($desktop, $router, $enginePath, (Join-Path $installDir 'uninstall.exe'))) {
+    $agentPath = Join-Path $installDir 'drift-agent.exe'
+    foreach ($path in @($desktop, $router, $enginePath, $agentPath, (Join-Path $installDir 'uninstall.exe'))) {
         if (-not (Test-Path $path -PathType Leaf)) { throw "Missing installed resource: $path" }
     }
     $results.install = $true
+    & python (Join-Path $PSScriptRoot 'check-windows-imports.py') --directory $installDir --report (Join-Path $PSScriptRoot '../target/windows-imports.json')
+    if ($LASTEXITCODE -ne 0) { throw 'Installed binaries require an external compiler runtime' }
+    $results.runtimeImports = $true
     Run-Checked $desktop @('--check-engine')
     $results.packagedEngine = $true
 
@@ -239,7 +243,7 @@ try {
     Run-Checked (Join-Path $installDir 'uninstall.exe') @('/S') 120
     Wait-Until { $null -eq (Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue) } 'service removal'
     if (Test-Path $legacyKey) { throw 'Uninstall left the product registry entry behind' }
-    Wait-Until { -not (Test-Path $desktop) -and -not (Test-Path $router) -and -not (Test-Path $enginePath) -and -not (Test-Path (Join-Path $installDir 'uninstall.exe')) } 'installed executables removal'
+    Wait-Until { -not (Test-Path $desktop) -and -not (Test-Path $router) -and -not (Test-Path $enginePath) -and -not (Test-Path $agentPath) -and -not (Test-Path (Join-Path $installDir 'uninstall.exe')) } 'installed executables removal'
     if ([IO.File]::ReadAllText($rulesPath) -cne $fixture) { throw 'Uninstall unexpectedly removed user rules' }
     $results.uninstall = $true
 } catch {

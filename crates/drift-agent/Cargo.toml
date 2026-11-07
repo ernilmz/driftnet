@@ -4,6 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[build-dependencies]
+static_vcruntime = "3.0"
+
 [dependencies]
 drift-core = { path = "../drift-core" }
 drift-engine = { path = "../drift-engine" }

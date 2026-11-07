@@ -258,4 +258,67 @@ mod tests {
             assert!(validate_url(value).is_err());
         }
     }
+    fn require_disposable_gnome_session() {
+        assert_eq!(std::env::var("GITHUB_ACTIONS").as_deref(), Ok("true"));
+        assert_eq!(
+            std::env::var("DRIFT_TEST_REAL_GSETTINGS").as_deref(),
+            Ok("1")
+        );
+        let config = PathBuf::from(std::env::var_os("XDG_CONFIG_HOME").expect("isolated config"));
+        let state = PathBuf::from(std::env::var_os("XDG_STATE_HOME").expect("isolated state"));
+        assert_eq!(config.parent(), state.parent());
+        assert!(config.is_absolute());
+        assert!(
+            config
+                .parent()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("driftnet-gnome-pac-")
+        );
+    }
+    #[test]
+    #[ignore = "requires the isolated disposable Linux CI DBus session"]
+    fn real_gnome_proxy_crash_child() {
+        require_disposable_gnome_session();
+        let _lease = ProxyLease::enable("http://127.0.0.1:42001/proxy.pac").unwrap();
+        assert_eq!(GSettings.get("mode").unwrap(), "'auto'");
+        // Deliberately skip Rust destructors, exactly as an abruptly killed agent.
+        std::process::exit(0);
+    }
+    #[test]
+    #[ignore = "requires the isolated disposable Linux CI DBus session"]
+    fn real_gnome_proxy_lease_recovers() {
+        require_disposable_gnome_session();
+        let settings = GSettings;
+        settings.set("mode", "'none'").unwrap();
+        let before = variant("http://before.example/proxy.pac");
+        settings.set("autoconfig-url", &before).unwrap();
+        {
+            let _lease = ProxyLease::enable("http://127.0.0.1:42001/proxy.pac").unwrap();
+            assert_eq!(settings.get("mode").unwrap(), "'auto'");
+            assert_eq!(
+                settings.get("autoconfig-url").unwrap(),
+                variant("http://127.0.0.1:42001/proxy.pac")
+            );
+        }
+        assert_eq!(settings.get("mode").unwrap(), "'none'");
+        assert_eq!(settings.get("autoconfig-url").unwrap(), before);
+        let status = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "platform::linux::tests::real_gnome_proxy_crash_child",
+                "--ignored",
+                "--nocapture",
+            ])
+            .status()
+            .unwrap();
+        assert!(status.success());
+        assert_eq!(settings.get("mode").unwrap(), "'auto'");
+        ProxyLease::recover().unwrap();
+        assert_eq!(settings.get("mode").unwrap(), "'none'");
+        assert_eq!(settings.get("autoconfig-url").unwrap(), before);
+        assert!(!state_dir().unwrap().join("proxy-journal.json").exists());
+    }
 }
