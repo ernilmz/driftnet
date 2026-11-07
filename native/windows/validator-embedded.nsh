@@ -1,5 +1,5 @@
 ; Generated from validate-install.ps1. Keep the readable source in sync.
-; SHA256: a0769784e813f4fdf19ec34c48c6cc289fcf4f2b2c53e15a5f5169804549ebd8
+; SHA256: d9be1a3942689269fadb6f1d40878d5ec26bde334138e462b9f054bf32bbc035
 !macro DRIFT_WRITE_VALIDATOR
   FileOpen $2 "$PLUGINSDIR\driftnet-validate-install.ps1" w
   ${If} $2 == ""
@@ -36,6 +36,20 @@
   FileWrite $2 "        }$\r$\n"
   FileWrite $2 "    }$\r$\n"
   FileWrite $2 "}$\r$\n"
+  FileWrite $2 "function Assert-ShortcutDirectory([IO.DirectoryInfo]$$Item) {$\r$\n"
+  FileWrite $2 "    # Common Start Menu/Desktop directories may permit NEW entries. Creation$\r$\n"
+  FileWrite $2 "    # alone cannot replace an existing protected link. Keep all mutation,$\r$\n"
+  FileWrite $2 "    # deletion, ownership, ACL, and reparse-point checks for these ancestors.$\r$\n"
+  FileWrite $2 "    if (($$Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Shortcut directory is a reparse point.' }$\r$\n"
+  FileWrite $2 "    $$acl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $$Item.FullName$\r$\n"
+  FileWrite $2 "    if ($$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $$trusted) { throw 'Shortcut directory has an unsafe owner.' }$\r$\n"
+  FileWrite $2 "    foreach ($$rule in $$acl.GetAccessRules($$true, $$true, [Security.Principal.SecurityIdentifier])) {$\r$\n"
+  FileWrite $2 "        if ($$rule.AccessControlType -ne 'Allow' -or ($$rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0) { continue }$\r$\n"
+  FileWrite $2 "        if (([int64]$$rule.FileSystemRights -band 0x500d0150) -ne 0 -and $$rule.IdentityReference.Value -notin $$trusted) {$\r$\n"
+  FileWrite $2 "            throw 'Shortcut directory allows existing entries to be changed or deleted.'$\r$\n"
+  FileWrite $2 "        }$\r$\n"
+  FileWrite $2 "    }$\r$\n"
+  FileWrite $2 "}$\r$\n"
   FileWrite $2 "function Test-ShortcutTarget([string]$$Path, [string]$$Target) {$\r$\n"
   FileWrite $2 "    $$shell = $$null$\r$\n"
   FileWrite $2 "    $$link = $$null$\r$\n"
@@ -58,7 +72,7 @@
   FileWrite $2 "        Assert-ProtectedItem ([IO.FileInfo]::new($$full))$\r$\n"
   FileWrite $2 "        $$parent = [IO.DirectoryInfo]::new([IO.Path]::GetDirectoryName($$full))$\r$\n"
   FileWrite $2 "        while ($$null -ne $$parent) {$\r$\n"
-  FileWrite $2 "            Assert-ProtectedItem $$parent$\r$\n"
+  FileWrite $2 "            Assert-ShortcutDirectory $$parent$\r$\n"
   FileWrite $2 "            if ([string]::Equals($$parent.FullName, $$common, [StringComparison]::OrdinalIgnoreCase)) { break }$\r$\n"
   FileWrite $2 "            $$parent = $$parent.Parent$\r$\n"
   FileWrite $2 "        }$\r$\n"

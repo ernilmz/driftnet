@@ -29,6 +29,20 @@ function Assert-ProtectedItem([IO.FileSystemInfo]$Item) {
         }
     }
 }
+function Assert-ShortcutDirectory([IO.DirectoryInfo]$Item) {
+    # Common Start Menu/Desktop directories may permit NEW entries. Creation
+    # alone cannot replace an existing protected link. Keep all mutation,
+    # deletion, ownership, ACL, and reparse-point checks for these ancestors.
+    if (($Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Shortcut directory is a reparse point.' }
+    $acl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $Item.FullName
+    if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted) { throw 'Shortcut directory has an unsafe owner.' }
+    foreach ($rule in $acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+        if ($rule.AccessControlType -ne 'Allow' -or ($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0) { continue }
+        if (([int64]$rule.FileSystemRights -band 0x500d0150) -ne 0 -and $rule.IdentityReference.Value -notin $trusted) {
+            throw 'Shortcut directory allows existing entries to be changed or deleted.'
+        }
+    }
+}
 function Test-ShortcutTarget([string]$Path, [string]$Target) {
     $shell = $null
     $link = $null
@@ -51,7 +65,7 @@ function Test-ShortcutTarget([string]$Path, [string]$Target) {
         Assert-ProtectedItem ([IO.FileInfo]::new($full))
         $parent = [IO.DirectoryInfo]::new([IO.Path]::GetDirectoryName($full))
         while ($null -ne $parent) {
-            Assert-ProtectedItem $parent
+            Assert-ShortcutDirectory $parent
             if ([string]::Equals($parent.FullName, $common, [StringComparison]::OrdinalIgnoreCase)) { break }
             $parent = $parent.Parent
         }
