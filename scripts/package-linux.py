@@ -58,6 +58,7 @@ def build(args: argparse.Namespace) -> Path:
         for name in ["LICENSE", "THIRD_PARTY_NOTICES.md"]:
             if (ROOT / name).is_file(): install(ROOT / name, f"usr/share/doc/driftnet/{name}")
         install(ROOT / "native/router/LICENSE", "usr/share/doc/driftnet/router-LICENSE")
+        install(ROOT / "vendor/glib/LICENSE", "usr/share/doc/driftnet/glib-LICENSE")
         # Mirror the fixed license/provenance files in the base desktop bundle.
         # Installer-only macOS resources are deliberately outside this namespace.
         for relative, destination in config["bundle"].get("resources", {}).items():

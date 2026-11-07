@@ -27,6 +27,10 @@ jobs:
       - name: Build current native router only
         if: inputs.rebuild_router
         run: python scripts/build-router.py --target x86_64-pc-windows-msvc
+      - name: Native Windows service security and readiness regressions
+        if: inputs.rebuild_router
+        working-directory: target/router-src
+        run: go test -tags with_gvisor ./cmd/drift-router ./common/process
       - uses: actions/download-artifact@v4
         with:
           name: Driftnet-Windows-native

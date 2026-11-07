@@ -1,5 +1,5 @@
 ; Generated from validate-install.ps1. Keep the readable source in sync.
-; SHA256: aff64f559c431c229c40d3aee3fd0ec5fbb9a2e22cd0bf75e2878cee03e6b37f
+; SHA256: 59df8a683d8804a2fab80f4bdb686694282d85adf2aaa07b7939116a925cbb87
 !macro DRIFT_WRITE_VALIDATOR
   FileOpen $2 "$PLUGINSDIR\driftnet-validate-install.ps1" w
   ${If} $2 == ""
@@ -7,10 +7,12 @@
   ${EndIf}
   FileWrite $2 "param($\r$\n"
   FileWrite $2 "    [Parameter(Mandatory = $$true)][string]$$InstallDirectory,$\r$\n"
-  FileWrite $2 "    [ValidateSet('Prepare', 'Remove')][string]$$Mode = 'Prepare'$\r$\n"
+  FileWrite $2 "    [ValidateSet('Validate', 'Prepare', 'Remove')][string]$$Mode = 'Prepare'$\r$\n"
   FileWrite $2 ")$\r$\n"
   FileWrite $2 "$$ErrorActionPreference = 'Stop'$\r$\n"
   FileWrite $2 "Set-StrictMode -Version Latest$\r$\n"
+  FileWrite $2 "$$env:PSModulePath = [IO.Path]::Combine($$PSHOME, 'Modules')$\r$\n"
+  FileWrite $2 "$$PSModuleAutoLoadingPreference = 'ModuleQualified'$\r$\n"
   FileWrite $2 "# Called by the elevated installer, before copying or executing any installed$\r$\n"
   FileWrite $2 "# helper. Program Files comes from the Windows known-folder API, not the caller's$\r$\n"
   FileWrite $2 "# environment. No existing executable or registry command is run here.$\r$\n"
@@ -21,7 +23,7 @@
   FileWrite $2 "$$trusted = @('S-1-5-18', 'S-1-5-32-544', 'S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')$\r$\n"
   FileWrite $2 "function Assert-ProtectedItem([IO.FileSystemInfo]$$Item) {$\r$\n"
   FileWrite $2 "    if (($$Item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'The installation contains a reparse point. Remove the old installation before retrying.' }$\r$\n"
-  FileWrite $2 "    $$acl = Get-Acl -LiteralPath $$Item.FullName$\r$\n"
+  FileWrite $2 "    $$acl = Microsoft.PowerShell.Security\Get-Acl -LiteralPath $$Item.FullName$\r$\n"
   FileWrite $2 "    if ($$acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $$trusted) { throw 'The installation has an unsafe owner. Remove the old installation before retrying.' }$\r$\n"
   FileWrite $2 "    foreach ($$rule in $$acl.GetAccessRules($$true, $$true, [Security.Principal.SecurityIdentifier])) {$\r$\n"
   FileWrite $2 "        if ($$rule.AccessControlType -ne 'Allow' -or ($$rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) -ne 0) { continue }$\r$\n"
@@ -32,10 +34,10 @@
   FileWrite $2 "}$\r$\n"
   FileWrite $2 "# Validate ancestors before traversing children. An unsafe ancestor is rejected$\r$\n"
   FileWrite $2 "# before any descendant can be replaced, read, or executed with elevation.$\r$\n"
-  FileWrite $2 "Assert-ProtectedItem (Get-Item -LiteralPath $$root -Force)$\r$\n"
-  FileWrite $2 "if (Test-Path -LiteralPath $$directory) {$\r$\n"
+  FileWrite $2 "Assert-ProtectedItem (Microsoft.PowerShell.Management\Get-Item -LiteralPath $$root -Force)$\r$\n"
+  FileWrite $2 "if ([IO.Directory]::Exists($$directory)) {$\r$\n"
   FileWrite $2 "    $$queue = [Collections.Generic.Queue[IO.FileSystemInfo]]::new()$\r$\n"
-  FileWrite $2 "    $$queue.Enqueue((Get-Item -LiteralPath $$directory -Force))$\r$\n"
+  FileWrite $2 "    $$queue.Enqueue((Microsoft.PowerShell.Management\Get-Item -LiteralPath $$directory -Force))$\r$\n"
   FileWrite $2 "    while ($$queue.Count -gt 0) {$\r$\n"
   FileWrite $2 "        $$item = $$queue.Dequeue()$\r$\n"
   FileWrite $2 "        Assert-ProtectedItem $$item$\r$\n"
@@ -44,7 +46,8 @@
   FileWrite $2 "        }$\r$\n"
   FileWrite $2 "    }$\r$\n"
   FileWrite $2 "}$\r$\n"
-  FileWrite $2 "$$service = Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue$\r$\n"
+  FileWrite $2 "if ($$Mode -eq 'Validate') { exit 0 }$\r$\n"
+  FileWrite $2 "$$service = Microsoft.PowerShell.Management\Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue$\r$\n"
   FileWrite $2 "if ($$null -ne $$service) {$\r$\n"
   FileWrite $2 "    try {$\r$\n"
   FileWrite $2 "        if ($$service.Status -ne 'Stopped') {$\r$\n"
@@ -54,7 +57,7 @@
   FileWrite $2 "    } finally { $$service.Dispose() }$\r$\n"
   FileWrite $2 "    & (Join-Path ([Environment]::SystemDirectory) 'sc.exe') delete DriftNetwork | Out-Null$\r$\n"
   FileWrite $2 "    if ($$LASTEXITCODE -ne 0) { throw 'The networking service could not be removed.' }$\r$\n"
-  FileWrite $2 "    Start-Sleep -Milliseconds 500$\r$\n"
+  FileWrite $2 "    Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 500$\r$\n"
   FileWrite $2 "}$\r$\n"
   FileClose $2
 !macroend

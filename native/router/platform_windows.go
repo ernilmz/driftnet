@@ -154,15 +154,32 @@ func platformCommand() (bool, error) {
 	if err != nil && err != windows.ERROR_SERVICE_ALREADY_RUNNING {
 		return true, fmt.Errorf("start networking service: %w", err)
 	}
-	timeout := 10 * time.Second
-	pipe, err := winio.DialPipe(`\\.\pipe\Drift.Network`, &timeout)
-	if err == nil {
-		_ = pipe.Close()
-	}
-	if err != nil {
+	if err := waitWindowsPipe(10*time.Second, func(timeout *time.Duration) (net.Conn, error) {
+		return winio.DialPipe(`\\.\pipe\Drift.Network`, timeout)
+	}); err != nil {
 		return true, fmt.Errorf("connect networking service pipe: %w", err)
 	}
 	return true, nil
+}
+
+func waitWindowsPipe(timeout time.Duration, dial func(*time.Duration) (net.Conn, error)) error {
+	deadline := time.Now().Add(timeout)
+	for {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return errors.New("Networking service control pipe did not become ready")
+		}
+		pipe, err := dial(&remaining)
+		if err == nil {
+			return pipe.Close()
+		}
+		// StartService can return after SERVICE_RUNNING but before the server's
+		// first pipe instance exists. go-winio does not retry FILE_NOT_FOUND.
+		if !errors.Is(err, windows.ERROR_FILE_NOT_FOUND) && !errors.Is(err, windows.ERROR_PIPE_BUSY) && !errors.Is(err, winio.ErrTimeout) {
+			return err
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
 }
 
 func watchApplication(_ context.Context, _ context.CancelFunc) {}

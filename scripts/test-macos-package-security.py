@@ -34,4 +34,14 @@ with tempfile.TemporaryDirectory(prefix='driftnet-installer-security-') as tempo
     assert not accepts('safe_dir', directory), 'promoted an unprivileged directory'
     assert not accepts('safe_file', victim), 'trusted an unprivileged existing file'
     assert victim.read_text() == 'unchanged', 'preflight touched the linked destination'
-print('Installer preflight rejected unprivileged and symlink fixtures without writes.')
+    acl_directory = directory/'acl-fixture'
+    acl_directory.mkdir()
+    try:
+        subprocess.run(['/bin/chmod', '+a', 'everyone deny delete', str(acl_directory)], check=True)
+        assert accepts('safe_acl', acl_directory), 'rejected the normal macOS deny-delete ACL'
+        subprocess.run(['/bin/chmod', '-N', str(acl_directory)], check=True)
+        subprocess.run(['/bin/chmod', '+a', 'everyone allow add_file,add_subdirectory,delete_child,chown,writesecurity', str(acl_directory)], check=True)
+        assert not accepts('safe_acl', acl_directory), 'accepted extended ACL write grants'
+    finally:
+        subprocess.run(['/bin/chmod', '-N', str(acl_directory)], check=True)
+print('Installer preflight rejected unprivileged, symlink and allow-ACL fixtures; accepted deny-delete ACLs.')

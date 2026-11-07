@@ -21,6 +21,14 @@ if not app.is_dir():
 # Existing privileged directories must already be trusted BEFORE changing their
 # mode/owner. Promoting a user-created directory can retain hostile symlinks.
 path_checks = '''fail() { echo "Unsafe existing Driftnet helper path: $1" >&2; exit 1; }
+safe_acl() {
+  acl="$(/bin/ls -lde "$1")" || fail "$1"
+  # A previous chmod/chown does not remove extended ACL grants. These fixed
+  # privileged paths need no allow ACLs; normal macOS deny-delete entries stay.
+  if /usr/bin/printf '%s\\n' "$acl" | /usr/bin/grep -Eq '^[[:space:]]*[0-9]+: .* allow '; then
+    fail "$1 (extended ACL grant)"
+  fi
+}
 safe_dir() {
   [ ! -L "$1" ] || fail "$1"
   if [ -e "$1" ]; then
@@ -28,6 +36,7 @@ safe_dir() {
     [ "$(/usr/bin/stat -f %u "$1")" -eq 0 ] || fail "$1"
     mode="$(/usr/bin/stat -f %Lp "$1")"
     [ $((0$mode & 0022)) -eq 0 ] || fail "$1"
+    safe_acl "$1"
   fi
 }
 safe_file() {
@@ -38,6 +47,7 @@ safe_file() {
     [ "$(/usr/bin/stat -f %l "$1")" -eq 1 ] || fail "$1"
     mode="$(/usr/bin/stat -f %Lp "$1")"
     [ $((0$mode & 0022)) -eq 0 ] || fail "$1"
+    safe_acl "$1"
   fi
 }
 safe_dir /Library

@@ -26,18 +26,15 @@ and signing host. Never upload the private key or embed a GitHub access token.
 
 | ID | Severity | Finding | Disposition |
 | --- | --- | --- | --- |
+| INST-MAC-01 | High, conditional local privilege escalation | A pre-existing user-owned helper state directory could contain a symlink followed by an elevated installer write; helper binaries were copied from an admin-writable application bundle. | Fixed in source: validate root ownership, write permissions and fixed-path symlinks before installation; exclusive temporary owner record and atomic replacement; helper binaries are direct protected payload entries. Guard fixtures, script syntax, package build and strict staged signature checks passed. Final installed package acceptance remains separate. |
+| INST-WIN-01 | High, conditional local privilege escalation | Elevated hooks / LocalSystem service registration could execute a helper from an arbitrarily writable custom install directory. | Fixed in source: only protected Program Files product roots, owner/DACL/reparse-point validation in installer and service registration, SCM operations through trusted OS APIs, and a negative unsafe-location regression. Native installer acceptance is required before release. |
+| IPC-01 | Low, local availability | An authenticated slow reader could keep a reply/lease operation blocked without a write bound. | Fixed: bounded control reply writes and teardown when readiness cannot be delivered. A real blocked socket regression passed. A malicious local user can still occupy the one global routing lease. |
 | UPD-01 | Low, defense in depth | Initial release URL checking accepted an extra path/query within the trusted GitHub repository; staging used ordinary file creation. Signatures still prevented a demonstrated remote substitution. | Hardened: exact signed `vVERSION` path, one ASCII filename, no query/fragment/credentials/nonstandard port, fixed local filename, bounded semantic version, exclusive 0600 creation and symlink rejection. |
 | LOCAL-01 | Medium, conditional local attack | The verified installer remains owned by the desktop user until the OS installer reads it. Code already running as that same uid can modify user-owned staging after verification; normal OS admin consent is still required. | Explicit residual risk. 0700/0600 and immediate re-verification are not kernel-enforced root-side authentication. No new general-purpose privileged install IPC was added. |
-| PRIV-01 | Low, privacy | Initial macOS release agent/desktop binaries contained build-machine home/source paths. Package metadata included `com.apple.provenance`. | Release path remapping and stage metadata cleanup are being applied; final rebuilt artifacts must be scanned again. No credential or private-key pattern was found in the inspected payload. |
+| PRIV-01 | Low, privacy | Initial macOS release agent/desktop binaries contained build-machine home/source paths. Package metadata included removable attributes and OS-managed `com.apple.provenance`. | Release path remapping and stage metadata cleanup are applied during final rebuilding; rebuilt artifacts must be scanned again. macOS can reattach a generic, non-identifying provenance attribute even to new files, so no claim of zero extended attributes is made. No credential or private-key pattern was found in the inspected payload. |
 | PRIV-02 | Low, privacy | Initial corresponding-source tar headers exposed the builder account name/uid/gid and timestamps. | Fixed in the source packager: normalize uid/gid to 0, clear account names/PAX metadata, use `SOURCE_DATE_EPOCH` (default 0), omit gzip filename and set gzip timestamp to 0. Final archive regeneration/reinspection is required. |
 | DEP-01 | Informational unsoundness, potentially a crash if reached | RustSec flags `glib` 0.18.5 `VariantStrIter` output-pointer mutability, RUSTSEC-2024-0429. Tauri's Linux GTK3 chain uses this version. | Exact two-line upstream fix backported as `0.18.5+driftnet.1` without changing the GTK3 API family. Official crate and all retained files are checksum-pinned; the backport guard passes. Optimized upstream iterator tests and native desktop compilation are required in Ubuntu CI before final acceptance. |
 | REL-01 | Low, release integrity usability | The initial `dist/SHA256SUMS.txt` named older development artifacts. | Do not publish it unchanged. Regenerate checksums after the final packages, source archive and signatures are complete. Checksums alone are not authenticity signatures. |
-
-The separate Windows reviewer also identified an elevated installer path risk:
-executing a pre-existing helper from an arbitrarily user-writable custom install
-directory. Its trusted installation-root/ACL remediation and native negative tests
-are tracked with the Windows review; the final report must record their actual
-outcome rather than infer a pass from the updater's tests.
 
 ## Repository, history and package privacy
 
@@ -158,3 +155,42 @@ license obligations; redistribution must preserve their notices and correspondin
 source requirements. See [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) and
 [LICENSE](../LICENSE). This technical review is not trademark clearance or a legal
 opinion that every third-party license obligation has been independently certified.
+
+## Local routing and operating-system privileges
+
+The reviewed custom protocol uses kernel-authenticated local users, bounded JSON
+and app counts, exact escaped paths and per-owner process filtering. Unknown
+ownership remains direct. It does not accept an arbitrary executable, shell
+command or upstream router JSON to execute with privileges. Control sockets and
+traffic listeners are local; the latter are not an authentication boundary against
+other processes on the same host.
+
+The macOS installer registers a desktop uid. That account can request system PAC
+changes pointing at its own loopback server, so a compromised application under
+that account can misuse the delegated routing capability. Linux accepts local
+non-root users and Windows interactive users; one global routing session means a
+local account can occupy it and deny another user access. This utility does not
+provide isolation from a hostile local account.
+
+The root helper intentionally has networking and process-inspection privileges.
+Linux's engine additionally receives CAP_NET_RAW for physical-interface binding.
+Native packet parsers and the upstream TUN stack remain security-sensitive. The
+review covered custom glue and boundaries; it did not fuzz or formally verify all
+upstream native code and does not establish that no exploitable defect exists.
+
+There is no separate analytics or account backend. Expected outbound requests
+include the configured GitHub update feed, DNS-over-HTTPS resolvers for selected
+website names, favicons fetched from entered websites, and the destinations of
+routed traffic. Their servers can observe ordinary connection metadata. Driftnet
+does not change the public IP address or promise anonymity. GitHub account/noreply
+author attribution remains associated with the project, even though no private
+key or production credential was found.
+
+## Native presentation verification
+
+A separate unprivileged macOS preview tested initial display, Escape dismissal,
+reopening with retained Settings state, and native About version/copyright. The
+installed Access session and its agent were left running during this test.
+The surface uses a short opacity/position/scale transition, reverses a queued
+hide on reopening, and respects the reduced-motion media preference. This does
+not establish Windows/Linux compositor behavior or a measured animation frame rate.

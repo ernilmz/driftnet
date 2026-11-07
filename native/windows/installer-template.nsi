@@ -1,5 +1,5 @@
 ; Tauri CLI 2.12.4 NSIS template; licensed under MIT (Tauri-LICENSE-MIT.txt).
-; Driftnet modifications: preserve the already-shipped registry identity only.
+; Driftnet modifications: preserve registry identity and require protected paths.
 Unicode true
 ManifestDPIAware true
 ; Add in `dpiAwareness` `PerMonitorV2` to manifest for Windows 10 1607+ (note this should not affect lower versions since they should be able to ignore this and pick up `dpiAware` `true` set by `ManifestDPIAware true`)
@@ -415,7 +415,6 @@ Function PageLeaveReinstall
 FunctionEnd
 
 ; 5. Choose install directory page
-!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
 ; Privileged helpers require the fixed, protected Program Files location.
 ; Keep RestorePreviousInstallLocation for safe, already-shipped Drift upgrades.
 
@@ -555,6 +554,9 @@ Function .onInit
     Call RestorePreviousInstallLocation
   ${EndIf}
 
+  ; Reinstall pages can launch an older uninstaller before PREINSTALL. Validate
+  ; its installation tree now, without stopping the service or changing files.
+  !insertmacro DRIFT_VALIDATE_INSTALL Validate
 
   !if "${INSTALLMODE}" == "both"
     !insertmacro MULTIUSER_INIT

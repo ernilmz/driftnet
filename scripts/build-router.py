@@ -12,7 +12,11 @@ source=root/'vendor/sing-box';build=root/'target/router-src'
 manifest=json.loads((source/'DRIFT_UPSTREAM.json').read_text())
 for entry in manifest['files']:
  if hashlib.sha256((source/entry['path']).read_bytes()).hexdigest()!=entry['sha256']:raise SystemExit('Pinned router source changed: '+entry['path'])
-if not build.exists():shutil.copytree(source,build)
+# Cargo's dependency cache may restore only part of target/router-src. Always
+# reconstruct this disposable source stage, including removals, from the verified
+# tree before reapplying patches; an existing directory is not a complete build.
+if build.exists():shutil.rmtree(build)
+shutil.copytree(source,build)
 # Always reset and apply this explicit, auditable modification to the original.
 original=(source/'common/process/searcher.go').read_text();anchor='\tif info.UserId != -1 && info.UserName == "" {'
 assert original.count(anchor)==1
@@ -32,8 +36,11 @@ for file in (root/'native/router').glob('*.go'):
  shutil.copy2(file,cmd/file.name)
 env=os.environ.copy();env.update(GOOS=platform,GOARCH=arch,CGO_ENABLED='0')
 go=env.get('DRIFT_GO','go')
-# go-winio is used only for the authenticated local Windows control pipe.
-if platform=='windows':subprocess.run([go,'get','github.com/Microsoft/go-winio@v0.6.2'],cwd=build,env=env,check=True)
+# Keep the Windows pipe dependency in every staged source tree, even after a
+# macOS/Linux build, so the corresponding offline source archive builds on all
+# supported targets. The untouched upstream source remains hash-verified above.
+subprocess.run([go,'mod','edit','-require=github.com/Microsoft/go-winio@v0.6.2'],cwd=build,env=env,check=True)
+subprocess.run([go,'mod','download','github.com/Microsoft/go-winio@v0.6.2'],cwd=build,env=env,check=True)
 output=root/'apps/desktop/binaries'/('drift-router-'+args.target+('.exe' if platform=='windows' else ''))
 subprocess.run([go,'build','-mod=mod','-trimpath','-tags','with_gvisor',('-ldflags=-s -w -H windowsgui' if platform=='windows' else '-ldflags=-s -w'),'-o',str(output),'./cmd/drift-router'],cwd=build,env=env,check=True)
 print(output)

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"net"
 	"testing"
+	"time"
 
 	"golang.org/x/sys/windows"
 )
@@ -25,6 +27,22 @@ func TestServiceSecurityDescriptorRejectsWritableOrUnownedCode(t *testing.T) {
 		if got := validateWindowsDescriptor(descriptor) == nil; got != test.ok {
 			t.Fatalf("descriptor accepted=%v, expected %v", got, test.ok)
 		}
+	}
+}
+
+func TestServiceReadinessWaitsForFirstPipeInstance(t *testing.T) {
+	attempts := 0
+	err := waitWindowsPipe(time.Second, func(_ *time.Duration) (net.Conn, error) {
+		attempts++
+		if attempts < 3 {
+			return nil, windows.ERROR_FILE_NOT_FOUND
+		}
+		client, server := net.Pipe()
+		defer server.Close()
+		return client, nil
+	})
+	if err != nil || attempts != 3 {
+		t.Fatalf("readiness attempts=%d, error=%v", attempts, err)
 	}
 }
 
