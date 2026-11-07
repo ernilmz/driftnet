@@ -1,0 +1,34 @@
+name: Windows shortcut fixture
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  shortcuts:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and verify the pinned NSIS fixture compiler
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path target -Force | Out-Null
+          Invoke-WebRequest https://github.com/tauri-apps/binary-releases/releases/download/nsis-3.13/nsis-3.13.zip -OutFile target/nsis.zip
+          if ((Get-FileHash target/nsis.zip -Algorithm SHA256).Hash -ne 'BA63DFFC4410EE89193E1CB5A41989991BD77C61068DA17E3156D136B7B0B3D8') { throw 'NSIS compiler checksum mismatch' }
+          Expand-Archive target/nsis.zip target/nsis
+      - name: Compile only the shortcut lifecycle fixture
+        shell: pwsh
+        run: |
+          python scripts/embed-windows-validator.py --check
+          $fixture = (Resolve-Path scripts/windows-shortcut-fixture.nsi).Path
+          & target/nsis/nsis-3.13/makensis.exe /V2 $fixture
+          if ($LASTEXITCODE -ne 0) { throw 'Shortcut fixture compilation failed' }
+      - name: Test post-install and pre-uninstall cleanup on Windows PowerShell 5
+        shell: pwsh
+        run: ./scripts/test-windows-shortcuts.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Driftnet-shortcut-fixture
+          path: target/shortcut-fixture.json
+          if-no-files-found: warn
+          retention-days: 7

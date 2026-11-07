@@ -1,6 +1,9 @@
 param(
     [Parameter(Mandatory = $true)][string]$InstallDirectory,
-    [ValidateSet('Validate', 'Prepare', 'Remove')][string]$Mode = 'Prepare'
+    [ValidateSet('Validate', 'Prepare', 'Remove', 'Shortcut', 'CleanupLegacy', 'CleanupAll')][string]$Mode = 'Prepare',
+    [string]$ShortcutPath = '',
+    [string]$ShortcutTarget = '',
+    [string]$StartMenuFolder = 'Driftnet'
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -25,6 +28,56 @@ function Assert-ProtectedItem([IO.FileSystemInfo]$Item) {
         }
     }
 }
+function Test-ShortcutTarget([string]$Path, [string]$Target) {
+    $shell = $null
+    $link = $null
+    try {
+        $full = [IO.Path]::GetFullPath($Path)
+        $expected = [IO.Path]::GetFullPath($Target)
+        if (-not $expected.StartsWith($directory + '\', [StringComparison]::OrdinalIgnoreCase) -or -not [IO.File]::Exists($full)) { return $false }
+        $commonRoots = @([Environment]::GetFolderPath('CommonPrograms'), [Environment]::GetFolderPath('CommonDesktopDirectory'))
+        $common = $null
+        foreach ($candidate in $commonRoots) {
+            if ($full.StartsWith($candidate + '\', [StringComparison]::OrdinalIgnoreCase)) { $common = $candidate; break }
+        }
+        if ($null -eq $common -or [IO.Path]::GetExtension($full) -ine '.lnk') { return $false }
+        Assert-ProtectedItem ([IO.FileInfo]::new($full))
+        $parent = [IO.DirectoryInfo]::new([IO.Path]::GetDirectoryName($full))
+        while ($null -ne $parent) {
+            Assert-ProtectedItem $parent
+            if ([string]::Equals($parent.FullName, $common, [StringComparison]::OrdinalIgnoreCase)) { break }
+            $parent = $parent.Parent
+        }
+        # Read metadata only. Never Save, Resolve, launch, or execute the link.
+        $shell = [Activator]::CreateInstance([type]::GetTypeFromProgID('WScript.Shell'))
+        $link = $shell.CreateShortcut($full)
+        if ([string]::IsNullOrWhiteSpace($link.TargetPath)) { return $false }
+        $actual = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($link.TargetPath))
+        return [string]::Equals($actual, $expected, [StringComparison]::OrdinalIgnoreCase)
+    } catch { return $false }
+    finally {
+        if ($null -ne $link) { $null = [Runtime.InteropServices.Marshal]::FinalReleaseComObject($link) }
+        if ($null -ne $shell) { $null = [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) }
+    }
+}
+function Remove-ProductShortcuts([bool]$All) {
+    $programs = [Environment]::GetFolderPath('CommonPrograms')
+    $desktop = [Environment]::GetFolderPath('CommonDesktopDirectory')
+    $paths = @([IO.Path]::Combine($programs, 'Drift', 'Drift.lnk'), [IO.Path]::Combine($desktop, 'Drift.lnk'))
+    if ($All) {
+        $paths += @([IO.Path]::Combine($programs, 'Driftnet', 'Driftnet.lnk'), [IO.Path]::Combine($programs, 'Driftnet.lnk'), [IO.Path]::Combine($desktop, 'Driftnet.lnk'))
+        if (-not [string]::IsNullOrWhiteSpace($StartMenuFolder)) { $paths += [IO.Path]::Combine($programs, $StartMenuFolder, 'Driftnet.lnk') }
+    }
+    foreach ($path in $paths) {
+        if (Test-ShortcutTarget $path ([IO.Path]::Combine($directory, 'drift-desktop.exe'))) {
+            [IO.File]::Delete($path)
+            $parent = [IO.Path]::GetDirectoryName($path)
+            if (-not [string]::Equals($parent, $programs, [StringComparison]::OrdinalIgnoreCase) -and -not [string]::Equals($parent, $desktop, [StringComparison]::OrdinalIgnoreCase)) {
+                try { [IO.Directory]::Delete($parent, $false) } catch [IO.IOException] { }
+            }
+        }
+    }
+}
 # Validate ancestors before traversing children. An unsafe ancestor is rejected
 # before any descendant can be replaced, read, or executed with elevation.
 Assert-ProtectedItem (Microsoft.PowerShell.Management\Get-Item -LiteralPath $root -Force)
@@ -40,6 +93,14 @@ if ([IO.Directory]::Exists($directory)) {
     }
 }
 if ($Mode -eq 'Validate') { exit 0 }
+if ($Mode -eq 'Shortcut') {
+    if (Test-ShortcutTarget $ShortcutPath $ShortcutTarget) { exit 0 }
+    exit 10
+}
+if ($Mode -eq 'CleanupLegacy' -or $Mode -eq 'CleanupAll') {
+    Remove-ProductShortcuts ($Mode -eq 'CleanupAll')
+    exit 0
+}
 $service = Microsoft.PowerShell.Management\Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue
 if ($null -ne $service) {
     try {
