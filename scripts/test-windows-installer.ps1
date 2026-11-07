@@ -257,7 +257,9 @@ try {
     Write-Host 'Uninstalling and checking service, program files, and rules'
     Run-Checked (Join-Path $installDir 'uninstall.exe') @('/S') 120
     Wait-Until { $null -eq (Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue) } 'service removal'
-    if (Test-Path $legacyKey) { throw 'Uninstall left the product registry entry behind' }
+    # NSIS launches a temporary uninstaller process; the original process can
+    # exit before the final registry cleanup follows service removal.
+    Wait-Until { -not (Test-Path $legacyKey) } 'product uninstall registry entry removal'
     Wait-Until { -not (Test-Path $desktop) -and -not (Test-Path $router) -and -not (Test-Path $enginePath) -and -not (Test-Path $agentPath) -and -not (Test-Path (Join-Path $installDir 'uninstall.exe')) } 'installed executables removal'
     if ([IO.File]::ReadAllText($rulesPath) -cne $fixture) { throw 'Uninstall unexpectedly removed user rules' }
     $results.uninstall = $true
