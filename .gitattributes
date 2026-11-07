@@ -5,3 +5,6 @@
 *.woff binary
 *.woff2 binary
 *.pkg binary
+
+# Hash manifests cover original vendor bytes exactly.
+vendor/** -text
