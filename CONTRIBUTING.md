@@ -92,10 +92,10 @@ installer bytes, manifest URLs or filenames afterward without regenerating the
 relevant signatures. Preserve the corresponding GPL router source and notices
 alongside distributed binaries.
 
-Keep the three direct installer links in the README's Download section and the
-release description in sync with each new version. Put downloads first, with
-platform requirements; keep source/signature details in a collapsed section.
-Preserve signed asset filenames when changing their display labels.
+Keep the direct installer links and platform requirements at the top of each
+release description. The README should link to the latest Releases page rather
+than list individual downloads. Keep source/signature details in a collapsed
+section. Preserve signed asset filenames when changing their display labels.
 
 The application's anonymous updater cannot read private GitHub releases. Keep
 manual installation available to repository members; never solve private-feed
