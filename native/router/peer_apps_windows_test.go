@@ -90,9 +90,18 @@ func TestWindowsIdentificationPipeValidatesAppsAsAuthenticatedProcess(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	handle, err := windows.CreateFile(wide, windows.GENERIC_READ|windows.GENERIC_WRITE, 0, nil, windows.OPEN_EXISTING, windows.SECURITY_SQOS_PRESENT|windows.SECURITY_IDENTIFICATION, 0)
-	if err != nil {
-		t.Fatal(err)
+	var handle windows.Handle
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		handle, err = windows.CreateFile(wide, windows.GENERIC_READ|windows.GENERIC_WRITE, 0, nil, windows.OPEN_EXISTING, windows.SECURITY_SQOS_PRESENT|windows.SECURITY_IDENTIFICATION, 0)
+		if err == nil {
+			break
+		}
+		// ListenPipe's Accept creates the first instance asynchronously.
+		if (err != windows.ERROR_PIPE_BUSY && err != windows.ERROR_FILE_NOT_FOUND) || time.Now().After(deadline) {
+			t.Fatal(err)
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 	// SAFETY: unique valid handle returned by CreateFile, transferred to File.
 	client := os.NewFile(uintptr(handle), name)
