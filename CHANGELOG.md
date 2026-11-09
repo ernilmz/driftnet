@@ -11,6 +11,14 @@
 - Preserve the authenticated process SID check and resolve reparse points before
   matching; another directory or a redirected child outside the selected root
   does not become a Discord match.
+- Resolve Windows process paths through the operating system's file handle API,
+  including valid junctions whose targets contain short 8.3 aliases.
+- Validate selected app paths and resolve process image paths under the verified
+  user's token. Restore the service identity before privileged network setup and
+  reuse validated patterns without reopening paths as SYSTEM.
+- Avoid a synchronous Windows pipe deadlock during agent shutdown. The lease
+  monitor no longer holds a pending read that prevents sending the stop command.
+  A native duplex-pipe regression and real installed-agent EOF check cover it.
 - Record a local updater-manifest HTTP 200 probe with normal TLS negotiation and
   forced TLS 1.2. Native 1.0.3 CI, affected Windows devices and provider-specific
   Discord startup/voice acceptance remain pending.

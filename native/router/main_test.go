@@ -94,3 +94,36 @@ func TestUnreadIPCReplyHasBoundedLifetime(t *testing.T) {
 		t.Fatal("unread peer pinned a privileged worker")
 	}
 }
+
+func TestPrevalidatedApplicationPathsAreNotReopened(t *testing.T) {
+	app := filepath.Join(t.TempDir(), "Selected.exe")
+	if err := os.WriteFile(app, []byte("fixture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	patterns, err := appPatterns([]App{{Path: app}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Remove(app); err != nil {
+		t.Fatal(err)
+	}
+	// Privileged construction consumes only the user-validated strings. It
+	// must not reopen request paths after leaving the impersonation scope.
+	raw, err := routerOptionsWithPatterns(Request{EnginePort: 12345, Apps: []App{{Path: app}}}, patterns)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config struct {
+		Route struct {
+			Rules []struct {
+				Paths []string `json:"process_path_regex"`
+			} `json:"rules"`
+		} `json:"route"`
+	}
+	if err = json.Unmarshal(raw, &config); err != nil {
+		t.Fatal(err)
+	}
+	if len(config.Route.Rules) != 1 || len(config.Route.Rules[0].Paths) != 1 || config.Route.Rules[0].Paths[0] != patterns[0] {
+		t.Fatal("validated patterns were replaced")
+	}
+}

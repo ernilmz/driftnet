@@ -171,6 +171,9 @@ func routerOptions(request Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	return routerOptionsWithPatterns(request, paths)
+}
+func routerOptionsWithPatterns(request Request, paths []string) ([]byte, error) {
 	if request.EnginePort < 1024 {
 		return nil, errors.New("Invalid local engine endpoint")
 	}
@@ -184,7 +187,7 @@ func routerOptions(request Request) ([]byte, error) {
 	}
 	return json.Marshal(config)
 }
-func newRouter(ctx context.Context, request Request) (*box.Box, error) {
+func newRouter(ctx context.Context, request Request, patterns []string) (*box.Box, error) {
 	ib := inbound.NewRegistry()
 	tun.RegisterInbound(ib)
 	ob := outbound.NewRegistry()
@@ -193,7 +196,7 @@ func newRouter(ctx context.Context, request Request) (*box.Box, error) {
 	ds := dns.NewTransportRegistry()
 	local.RegisterTransport(ds)
 	ctx = box.Context(ctx, ib, ob, endpoint.NewRegistry(), ds, boxService.NewRegistry(), certificate.NewRegistry())
-	raw, err := routerOptions(request)
+	raw, err := routerOptionsWithPatterns(request, patterns)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +284,7 @@ func handle(ctx context.Context, conn net.Conn) {
 	go func() { var stop [1]byte; _, _ = conn.Read(stop[:]); cancel() }()
 	var router *box.Box
 	if len(request.Apps) > 0 {
-		patterns, patternErr := appPatterns(request.Apps)
+		patterns, patternErr := peerAppPatterns(conn, owner, request.Apps)
 		if patternErr != nil {
 			answer(conn, false, patternErr)
 			return
@@ -290,7 +293,7 @@ func handle(ctx context.Context, conn net.Conn) {
 			answer(conn, false, err)
 			return
 		}
-		router, err = newRouter(sessionCtx, request)
+		router, err = newRouter(sessionCtx, request, patterns)
 		if err == nil {
 			err = router.Start()
 		}
@@ -392,7 +395,11 @@ func run() error {
 		if err := json.NewDecoder(io.LimitReader(os.Stdin, 65536)).Decode(&r); err != nil {
 			return err
 		}
-		b, err := newRouter(context.Background(), r)
+		patterns, err := appPatterns(r.Apps)
+		if err != nil {
+			return err
+		}
+		b, err := newRouter(context.Background(), r, patterns)
 		if err == nil {
 			_ = b.Close()
 		}

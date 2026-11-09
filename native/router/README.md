@@ -27,6 +27,11 @@ anchored to one canonical installation directory and includes only Update.exe an
 numeric app-<version>/Discord.exe paths, including a new version created during an
 active lease. Custom applications retain exact path rules. The Rust agent requires
 the updated Windows helper capability for every nonempty application selection.
+Path validation and process-image resolution run under the SID-verified local
+user's duplicated token, so UNC paths and junctions cannot use the service's
+SYSTEM network credentials. The OS thread remains pinned until checked reversion;
+failure stops the helper. Privileged router construction consumes the previously
+validated patterns and performs no second application-path lookup.
 
 The Rust/C engine remains a separate process over SOCKS5, licensed separately.
 Its outbound sockets bind to the pre-tunnel interface so the routing stack cannot

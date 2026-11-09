@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Microsoft/go-winio"
+	"github.com/sagernet/sing-box/common/process"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 	"net"
 	"os"
 	"path/filepath"
-	"runtime"
 	"syscall"
 	"time"
 )
@@ -27,25 +27,64 @@ func peerOwner(conn net.Conn) (string, error) {
 	if !ok {
 		return "", errors.New("Cannot authenticate this control pipe")
 	}
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	adv := windows.NewLazySystemDLL("advapi32.dll")
-	okCode, _, err := adv.NewProc("ImpersonateNamedPipeClient").Call(f.Fd())
-	if okCode == 0 {
-		return "", err
+	var owner string
+	err := process.DriftWithImpersonation(func() error {
+		adv := windows.NewLazySystemDLL("advapi32.dll")
+		okCode, _, err := adv.NewProc("ImpersonateNamedPipeClient").Call(f.Fd())
+		if okCode == 0 {
+			return err
+		}
+		return nil
+	}, func() error {
+		var token windows.Token
+		if err := windows.OpenThreadToken(windows.CurrentThread(), windows.TOKEN_QUERY, true, &token); err != nil {
+			return err
+		}
+		defer token.Close()
+		user, err := token.GetTokenUser()
+		if err != nil {
+			return err
+		}
+		owner = user.User.Sid.String()
+		return nil
+	})
+	return owner, err
+}
+
+func peerAppPatterns(conn net.Conn, owner string, apps []App) ([]string, error) {
+	pipe, ok := conn.(interface{ Fd() uintptr })
+	if !ok {
+		return nil, errors.New("Cannot authenticate this control pipe")
 	}
-	defer adv.NewProc("RevertToSelf").Call()
+	var pid uint32
+	if err := windows.GetNamedPipeClientProcessId(windows.Handle(pipe.Fd()), &pid); err != nil {
+		return nil, err
+	}
+	client, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+	if err != nil {
+		return nil, err
+	}
+	defer windows.CloseHandle(client)
 	var token windows.Token
-	if err = windows.OpenThreadToken(windows.CurrentThread(), windows.TOKEN_QUERY, true, &token); err != nil {
-		return "", err
+	if err = windows.OpenProcessToken(client, windows.TOKEN_QUERY|windows.TOKEN_DUPLICATE, &token); err != nil {
+		return nil, err
 	}
 	defer token.Close()
 	user, err := token.GetTokenUser()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return user.User.Sid.String(), nil
+	if owner == "" || user.User.Sid.String() != owner {
+		return nil, windows.ERROR_ACCESS_DENIED
+	}
+	var patterns []string
+	err = process.DriftWithProcessUser(token, func() (err error) {
+		patterns, err = appPatterns(apps)
+		return err
+	})
+	return patterns, err
 }
+
 func recoverProxy() error { return nil }
 func applyProxy(_ string) error {
 	return errors.New("Windows website proxy settings must be applied in the desktop user's session")

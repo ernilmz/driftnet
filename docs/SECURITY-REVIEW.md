@@ -9,6 +9,29 @@ root. Process owner SID verification remains mandatory; executable reparse point
 are resolved before matching so a redirected version directory cannot capture an
 outside executable. Exact generic-app selection remains exact.
 
+Native Windows tests also exposed short 8.3 aliases and a valid junction that
+Go's component-based resolver could not resolve. Process identity now uses a
+read-attributes file handle and `GetFinalPathNameByHandle`, matching the operating
+system's final DOS path. Handles close on every return, the UTF-16 buffer is bounded
+to 32,768 elements, and read/resolution failures keep the process unselected.
+
+Both IPC-selected paths and per-flow process-image paths are resolved under a
+duplicated user token after comparing its SID to the authenticated peer/session.
+This prevents a UNC image or an ancestor junction from causing filesystem access
+with the service's SYSTEM network credentials. The local pipe client's process
+token supplies the identity without requiring stronger client SQOS permissions.
+The OS thread stays pinned through checked reversion; a reversion failure stops
+the helper rather than returning an impersonated thread to the scheduler.
+Privileged router construction reuses the validated patterns without reopening
+the client-supplied paths.
+
+The first installed-agent regression exposed a separate Windows shutdown
+deadlock: a blocking read on a cloned synchronous pipe prevented writing the stop
+command. The Windows monitor now polls for post-teardown data or disconnection
+without holding a pending read. Unix monitoring remains unchanged. A native
+duplex-pipe test requires the stop write to complete, while installed-agent
+acceptance checks that the process exits and its routes disappear on owner EOF.
+
 All nonempty Windows app selections require the new helper capability. Older
 helpers fail with an installer-update message instead of reporting working app
 routing while silently using DIRECT. New Windows tests cover aliases, bounded
