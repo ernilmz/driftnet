@@ -27,7 +27,7 @@ func TestWindowsCanonicalExecutableMatchesProcessMetadata(t *testing.T) {
 	if !matcher.MatchString(metadata) || !matcher.MatchString(strings.ToUpper(metadata)) {
 		t.Fatalf("Rust canonical path did not match DOS process metadata: path=%q pattern=%q TEMP=%q", app, patterns[0], os.Getenv("TEMP"))
 	}
-	if matcher.MatchString(app + ".other") {
+	if matcher.MatchString(metadata + ".other") {
 		t.Fatal("exact app rule widened")
 	}
 	if got := normalizeAppPath(`\\?\UNC\server\share\Editor.exe`); got != `\\server\share\Editor.exe` {
