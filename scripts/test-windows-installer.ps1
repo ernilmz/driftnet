@@ -289,12 +289,14 @@ try {
     $agentStart.RedirectStandardError = $true
     $agentStart.Environment['LOCALAPPDATA'] = $agentFixture
     $agent = [Diagnostics.Process]::Start($agentStart)
+    $agentErrors = $agent.StandardError.ReadToEndAsync()
     $agent.StandardInput.WriteLine(($agentConfig | ConvertTo-Json -Compress -Depth 6))
     $agent.StandardInput.Flush()
     $readyTask = $agent.StandardOutput.ReadLineAsync()
     if (-not $readyTask.Wait(45000) -or $null -eq $readyTask.Result) { throw 'Installed Rust agent did not become ready' }
     $agentReady = $readyTask.Result | ConvertFrom-Json
     if (-not $agentReady.ok) { throw "Installed Rust agent failed: $($agentReady.error)" }
+    $agentOutput = $agent.StandardOutput.ReadToEndAsync()
     $agentTun = @(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'Drift')
     if ($agentTun.Count -ne 1) { throw 'Rust agent did not create its native application tunnel' }
     $agentTunIndex = $agentTun[0].ifIndex
@@ -334,7 +336,18 @@ try {
     if ($current.selected -le $prior.selected) { throw 'Discord update manifest bypassed selected application routing' }
     $agentChecks.discordManifestTls12 = $true
     $agent.StandardInput.Close()
-    if (-not $agent.WaitForExit(20000) -or $agent.ExitCode -ne 0) { throw 'Rust agent did not cleanly stop on owner EOF' }
+    $agentExited = $agent.WaitForExit(20000)
+    $results.rustAgentShutdown = [ordered]@{
+        exited = $agentExited
+        exitCode = if ($agentExited) { $agent.ExitCode } else { $null }
+        stderr = if ($agentErrors.IsCompleted) { $agentErrors.Result } else { '[stderr pipe still open]' }
+        stdout = if ($agentOutput.IsCompleted) { $agentOutput.Result } else { '[stdout pipe still open]' }
+        remainingRoutes = @(Get-NetRoute -InterfaceIndex $agentTunIndex -ErrorAction SilentlyContinue).Count
+        proxyJournal = Test-Path (Join-Path $agentFixture 'Drift/proxy-journal.json')
+        children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($agent.Id)" | Select-Object ProcessId, Name)
+    }
+    if (-not $agentExited) { throw 'Rust agent timed out on owner EOF (see rustAgentShutdown diagnostics)' }
+    if ($agent.ExitCode -ne 0) { throw "Rust agent exited with code $($agent.ExitCode) on owner EOF (see rustAgentShutdown diagnostics)" }
     $agent.Dispose(); $agent = $null
     Wait-Until { @(Get-NetRoute -InterfaceIndex $agentTunIndex -ErrorAction SilentlyContinue).Count -eq 0 } 'Rust-agent TUN routes removed on EOF'
     $agentChecks.cleanup = $true
