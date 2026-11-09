@@ -21,10 +21,18 @@ update and website HTTP 200, the Windows installer redirect/range HTTP 206 with
 65,536 bytes, selected/unselected site policy, PAC boundaries, owner EOF and
 website-only operation. The probe did not acquire an OS routing/proxy/DNS lease.
 
-Native Windows, macOS and Ubuntu follow-up runs are tracked in
+Native Windows, macOS and Ubuntu follow-up runs are recorded in
 [checks 42710358310](https://github.com/ernilmz/driftnet/actions/runs/42710358310).
-Their results must be checked before final installer publication. Earlier 1.0.1
-package and installer results below remain historical evidence for those bytes.
+All four jobs passed on production source `395addf`. Windows passed all twelve
+installer/service/selected-direct routing/repair/cleanup assertions with no error;
+Ubuntu's systemd, capabilities, TUN, GNOME PAC and uninstall checks passed.
+The exact three installers and manifest passed production signature verification,
+corruption rejection and version-relabel rejection. Their checksum list is signed.
+Mac package metadata, native engine smoke and privacy/patch-resource checks passed;
+Windows/Linux package licenses and new native patch manifests matched source.
+The corresponding GPL router source is byte-identical to the previously verified
+four-target offline source archive. Earlier 1.0.1 package and installer results
+below remain historical evidence for those bytes.
 
 ## Vodafone DNS compatibility follow-up — 10 November 2026
 

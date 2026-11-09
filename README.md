@@ -120,6 +120,13 @@ forces a sign-in.
 
 ## Verification status
 
+Version **1.0.2** adds encrypted DNS through the local engine and bounded TLS
+compatibility fallback, including an additional Windows method for filtered fiber
+connections. All four jobs in [checks 42710358310](https://github.com/ernilmz/driftnet/actions/runs/42710358310)
+passed, including the eight real-engine regressions and native Windows/Ubuntu
+installation and TUN checks. Actual Superonline-line compatibility and physical
+Windows 10/11 voice/video remain user acceptance checks.
+
 Version **1.0.1** includes the reviewed installer boundaries, signed full-installer
 updater, GLib safety backport and the fixed Go networking dependency. Detailed
 results and limits are recorded in [ACCEPTANCE.md](docs/ACCEPTANCE.md) and the

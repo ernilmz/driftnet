@@ -1,5 +1,27 @@
 # Security review — Driftnet 1.0.1
 
+## 1.0.2 compatibility follow-up — 10 November 2026
+
+The baseline review below concerns the original 1.0.1 bytes. Version 1.0.2 adds
+TLS-verified DNS-over-HTTPS through the owned engine and bounded TLS handshake
+fallback. A native guard restricts replay to a complete buffered single
+ClientHello, excluding HTTP requests and buffered early/application records.
+No rule scope, privileged IPC operation or updater trust key was expanded.
+
+All four jobs in [checks 42710358310](https://github.com/ernilmz/driftnet/actions/runs/42710358310)
+passed. Eight real-engine tests cover the full fallback chain, warm cache, silent
+timeout, non-replay, transport and owner cleanup. Windows passed all twelve native
+installer/TUN assertions. Final Windows/Linux packages passed license, patch-manifest,
+architecture and privacy-pattern checks; macOS passed its package metadata,
+patch-manifest/privacy checks and bundled-engine smoke test. The actual three
+installer signatures, manifest and checksum signature passed the production verifier,
+including rejection of corrupted or version-relabeled installer/manifest copies.
+The router source archive is byte-identical to the previously verified 1.0.1 source.
+Physical Superonline/Windows 10/11 voice acceptance remains unverified. This
+follow-up is not a new external security certification.
+
+## Original 1.0.1 review
+
 Review date: 7 November 2026. This is a code and artifact review, not a security
 certification or a claim that a compromised desktop account can be contained.
 The first history scan covered six reachable commits through `83bbab8` and 1,760

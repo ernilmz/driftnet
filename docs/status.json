@@ -45,10 +45,10 @@
     "macos_website_policy": "actual_CFNetwork_selected_proxy_unselected_direct_URLSession_gateway_HTTP200_passed",
     "macos_1_0_1_package": "historical_release_package_verified_separately_from_later_installed_1_0_1_bundle",
     "macos_1_0_1_final_privacy_signatures": "passed_29_file_privacy_license_BOM_and_actual_signature_checks",
-    "macos_native_ci": "passed_f108eee_run_42375361885",
-    "linux_native_ci": "passed_f108eee_run_42375361885_systemd_TUN_GNOME_PAC_GLib",
-    "windows_native_routing": "net60_selected_direct_graceful_and_crash_cleanup_passed",
-    "windows_installer_final_shortcut_cleanup": "passed_full_native_run_42379006434_at_0f044d4",
+    "macos_native_ci": "passed_395addf_run_42710358310",
+    "linux_native_ci": "passed_395addf_run_42710358310",
+    "windows_native_routing": "passed_395addf_run_42710358310_real_selected_direct_TUN_and_cleanup",
+    "windows_installer_final_shortcut_cleanup": "passed_all12_assertions_run_42710358310",
     "windows_physical_10_user_acceptance": "not_recorded",
     "current_version_voice_video": "not_user_tested",
     "updater_integrated_security_tests": "11_passed",
@@ -82,9 +82,9 @@
         "linux-arm64"
       ]
     },
-    "final_release_manifest_and_all_installer_signatures": "passed_actual_version_1_0_1_all_3_corruption_and_version_99_0_0_relabel_rejected",
-    "latest_complete_checks_matrix": "accepted_Mac_Linux_policy_baseline_f108eee_plus_final_Windows_installer_only_0f044d4_exact_4_payload_hashes",
-    "signed_release_checksums": "passed_production_verifier_version_1_0_1_covers_10_assets",
+    "final_release_manifest_and_all_installer_signatures": "passed_actual_version_1_0_2_all3_corruption_and_version_relabel_rejected",
+    "latest_complete_checks_matrix": "all4_jobs_passed_395addf_run_42710358310",
+    "signed_release_checksums": "passed_production_verifier_version_1_0_2_covers10_assets",
     "history_secret_scan": {
       "head": "0f044d4",
       "commits": 23,
@@ -95,7 +95,12 @@
       "date": "2026-11-10",
       "target": "Windows 10/11 x64",
       "change": "TLS-only automatic compatibility chain plus DoH via owned engine",
-      "physical_superonline_line": "not_available_here; provider acceptance unverified"
+      "physical_superonline_line": "not_available_here; provider acceptance unverified",
+      "ci": "all4_jobs_passed_run42710358310_windows8_engine_tests_and12_installer_assertions"
+    },
+    "corresponding_source_1_0_2": {
+      "sha256": "35fdc860d113c59a7e0ecc69b69ac59829d42e915179388c2df03c87d4f838a9",
+      "byte_identical_to": "1.0.1_source_with_recorded_four_target_offline_builds"
     }
   },
   "production_publisher_signing": {
@@ -108,8 +113,15 @@
     "policy": "publish_verified_artifacts_only_no_automatic_local_installation"
   },
   "artifact_bytes": {
-    "Driftnet-1.0.1-macOS.pkg": 22772704,
-    "Driftnet-1.0.1-Setup.exe": 13785420,
-    "Driftnet-1.0.1-linux-amd64.deb": 14412246
+    "Driftnet-1.0.2-macOS.pkg": 24446244,
+    "Driftnet-1.0.2-Setup.exe": 14831021,
+    "Driftnet-1.0.2-linux-amd64.deb": 15928254,
+    "Driftnet-1.0.2-Router-Source.tar.gz": 6550290
+  },
+  "artifact_sha256": {
+    "Driftnet-1.0.2-macOS.pkg": "ea7e8ebbcf6ef02a9534a7ac325ab643738a37f8d6f0c8acd525e82c3f5f01b5",
+    "Driftnet-1.0.2-Setup.exe": "bae374364cd259cccffdb5f48ea05f38e64cc00c3d8cdac31d6d174559e89366",
+    "Driftnet-1.0.2-linux-amd64.deb": "d44d2a5031fdda0bb10f608b655241e0fe2ca6eb6351f3b099643eb242218b56",
+    "Driftnet-1.0.2-Router-Source.tar.gz": "35fdc860d113c59a7e0ecc69b69ac59829d42e915179388c2df03c87d4f838a9"
   }
 }
