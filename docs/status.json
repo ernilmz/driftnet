@@ -45,10 +45,10 @@
     "macos_website_policy": "actual_CFNetwork_selected_proxy_unselected_direct_URLSession_gateway_HTTP200_passed",
     "macos_1_0_1_package": "historical_release_package_verified_separately_from_later_installed_1_0_1_bundle",
     "macos_1_0_1_final_privacy_signatures": "passed_29_file_privacy_license_BOM_and_actual_signature_checks",
-    "macos_native_ci": "passed_395addf_run_42710358310",
-    "linux_native_ci": "passed_395addf_run_42710358310",
-    "windows_native_routing": "passed_395addf_run_42710358310_real_selected_direct_TUN_and_cleanup",
-    "windows_installer_final_shortcut_cleanup": "passed_all12_assertions_run_42710358310",
+    "macos_native_ci": "passed_0a5674a_run42721284794",
+    "linux_native_ci": "passed_0a5674a_run42721284794",
+    "windows_native_routing": "passed_run42721284794_12_base_and7_real_agent_checks",
+    "windows_installer_final_shortcut_cleanup": "passed_run42721284794",
     "windows_physical_10_user_acceptance": "not_recorded",
     "current_version_voice_video": "not_user_tested",
     "updater_integrated_security_tests": "11_passed",
@@ -82,9 +82,9 @@
         "linux-arm64"
       ]
     },
-    "final_release_manifest_and_all_installer_signatures": "passed_actual_version_1_0_2_all3_corruption_and_version_relabel_rejected",
-    "latest_complete_checks_matrix": "all4_jobs_passed_395addf_run_42710358310",
-    "signed_release_checksums": "passed_production_verifier_version_1_0_2_covers10_assets",
+    "final_release_manifest_and_all_installer_signatures": "passed_actual_version_1_0_3_all3_corruption_and_version_relabel_rejected",
+    "latest_complete_checks_matrix": "all4_jobs_passed_0a5674a_run42721284794",
+    "signed_release_checksums": "passed_production_verifier_version_1_0_3_covers10_assets",
     "history_secret_scan": {
       "head": "0f044d4",
       "commits": 23,
@@ -105,9 +105,24 @@
     "windows_app_attribution_1_0_3": {
       "change": "canonical_DOS_and_extended_path_equivalence; bounded_Discord_updater_and_numeric_app_version_family; same_session_updates; owner_SID_and_canonical_reparse_path_enforced",
       "local": "Rust_workspace_and_clippy_passed; Windows_Rust_and_Go_cross_compile_passed",
-      "native_CI": "pending",
-      "real_updater_manifest": "HTTP200_default_and_forced_TLS1_2_on_local_probe; native_Windows_pending",
-      "physical_Superonline_Vodafone_Windows": "not_available_here; provider_acceptance_required"
+      "native_CI": "passed_run42721284794_all19",
+      "real_updater_manifest": "HTTP200_forced_TLS1_2_through_installed_Windows_agent_selected_route",
+      "physical_Superonline_Vodafone_Windows": "not_available_here; provider_acceptance_required",
+      "focused_security_CI": "passed_run42721300277_SID_user_token_reversion_identification_SQOS_junction_and_no_reopen",
+      "shutdown": "exit0_zero_routes_no_proxy_journal_no_child_engine",
+      "filesystem_identity": "SID_verified_process_user_token; checked_reversion_before_privileged_setup; prevalidated_paths_reused"
+    },
+    "corresponding_source_1_0_3": {
+      "sha256": "10733f50dbc9da43d6b2a87d5a8ebdf4494f60f6ef4d1a6eff40805f43f6c910",
+      "size": 6552934,
+      "members": 4424,
+      "regular_files": 4223,
+      "offline_builds": {
+        "darwin-arm64": true,
+        "windows-amd64": true,
+        "linux-amd64": true,
+        "linux-arm64": true
+      }
     }
   },
   "production_publisher_signing": {
@@ -120,16 +135,16 @@
     "policy": "publish_verified_artifacts_only_no_automatic_local_installation"
   },
   "artifact_bytes": {
-    "Driftnet-1.0.2-macOS.pkg": 24446244,
-    "Driftnet-1.0.2-Setup.exe": 14831021,
-    "Driftnet-1.0.2-linux-amd64.deb": 15928254,
-    "Driftnet-1.0.2-Router-Source.tar.gz": 6550290
+    "Driftnet-1.0.3-macOS.pkg": 24445119,
+    "Driftnet-1.0.3-Setup.exe": 14834200,
+    "Driftnet-1.0.3-linux-amd64.deb": 15923432,
+    "Driftnet-1.0.3-Router-Source.tar.gz": 6552934
   },
   "artifact_sha256": {
-    "Driftnet-1.0.2-macOS.pkg": "ea7e8ebbcf6ef02a9534a7ac325ab643738a37f8d6f0c8acd525e82c3f5f01b5",
-    "Driftnet-1.0.2-Setup.exe": "bae374364cd259cccffdb5f48ea05f38e64cc00c3d8cdac31d6d174559e89366",
-    "Driftnet-1.0.2-linux-amd64.deb": "d44d2a5031fdda0bb10f608b655241e0fe2ca6eb6351f3b099643eb242218b56",
-    "Driftnet-1.0.2-Router-Source.tar.gz": "35fdc860d113c59a7e0ecc69b69ac59829d42e915179388c2df03c87d4f838a9"
+    "Driftnet-1.0.3-macOS.pkg": "26c3dca31159160775ce4937285b8080329b03f845d8d99f8ada54589f3b3e86",
+    "Driftnet-1.0.3-Setup.exe": "33b4cdd77dd1206aa6151931cb6e066c23bc402850c25dd53eb6c07949b39840",
+    "Driftnet-1.0.3-linux-amd64.deb": "948fc01fc73547a53f4a4bd61e4c9110d3ae866425545f4e73eafea7fe964ddb",
+    "Driftnet-1.0.3-Router-Source.tar.gz": "10733f50dbc9da43d6b2a87d5a8ebdf4494f60f6ef4d1a6eff40805f43f6c910"
   },
-  "release": "1.0.3_pending_native_CI_and_signing"
+  "release": "1.0.3_signed_native_CI_verified"
 }

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.3 — unreleased
+## 1.0.3 — 2026-11-10
 
 - Normalize Windows extended-length canonical paths (`\\?\`) to the same DOS/UNC
   spelling used by process metadata. Previously a selected app could miss its
@@ -20,8 +20,9 @@
   monitor no longer holds a pending read that prevents sending the stop command.
   A native duplex-pipe regression and real installed-agent EOF check cover it.
 - Record a local updater-manifest HTTP 200 probe with normal TLS negotiation and
-  forced TLS 1.2. Native 1.0.3 CI, affected Windows devices and provider-specific
-  Discord startup/voice acceptance remain pending.
+  forced TLS 1.2. All four native CI jobs and 19 Windows installer/routing checks passed,
+  including the installed-agent TLS 1.2 manifest request and cleanup. Physical
+  provider-specific Discord startup and voice acceptance remain pending.
 
 ## 1.0.2 — 2026-11-10
 

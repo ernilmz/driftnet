@@ -1,6 +1,6 @@
 # Acceptance record
 
-Release target: **1.0.3 (pending acceptance)**. Updated: **10 November 2026**.
+Release target: **1.0.3**. Updated: **10 November 2026**.
 
 This record separates the current follow-up from observed earlier releases.
 The 1.0.2 and 1.0.1 results below are historical evidence for those exact builds;
@@ -19,10 +19,24 @@ resolved before selection. This is not a rule for arbitrary same-named programs.
 
 On the current local connection, the public updater manifest returned HTTP 200
 with both normal TLS negotiation and forced TLS 1.2. This was not a test on the
-affected Windows device or either reported provider. Native 1.0.3 CI has not run;
-installer/upgrade, selected-process attribution, real Discord startup on those
-networks, and voice/video remain pending. No previous passing HTTP or generic TUN
-test is used to claim that the reported Discord failure is resolved.
+affected Windows device and does not establish Windows behavior on either
+reported provider. All four jobs in [checks 42721284794](https://github.com/ernilmz/driftnet/actions/runs/42721284794) passed. The native Windows
+installer passed its 12 existing install/service/upgrade/TUN/cleanup checks plus
+seven real-agent checks: canonical generic app, Discord updater, initial version,
+new version created during Access, unrelated DIRECT, updater manifest via forced
+TLS 1.2 (HTTP 200) and owner-EOF cleanup. The agent exited with code 0, zero routes,
+no proxy journal and no child engine. The path-specific executable tests use
+copies of Windows curl named Update.exe and Discord.exe in synthetic installation
+folders. They exercise the real installed Driftnet agent and public update endpoint,
+not Discord GUI startup or its actual updater TLS implementation. The new
+synchronous duplex-pipe regression passed too.
+
+[Focused Windows security checks](https://github.com/ernilmz/driftnet/actions/runs/42721300277) passed process-token identity,
+checked reversion after success/failure, identification-only pipe clients, foreign
+peer denial before path access, junction boundaries and reuse of prevalidated
+patterns. Filesystem access runs as the verified user; privileged routing starts
+after reversion. Physical Discord startup on the reported networks and voice/video
+remain pending. These results do not establish provider-wide compatibility.
 
 The similar browser-versus-desktop symptom is documented in
 [GoodbyeDPI-Turkey issue 163](https://github.com/cagritaskn/GoodbyeDPI-Turkey/issues/163)
@@ -140,8 +154,9 @@ does not install software or change repository visibility.
 
 ## Remaining end-to-end observations
 
-- Native 1.0.3 CI and an observed OS-approved upgrade preserving rules and
-  replacing both GUI and helper. Earlier signature checks are not this installation.
+- An observed update on the physical user devices preserving rules and replacing
+  GUI/helper together. Native CI installation/upgrade passed; it is not a physical
+  Windows 10 or user-approved Mac installation result.
 - Physical Windows Discord startup and process selection on the reported
   Superonline/Vodafone connections; the local updater HTTP 200 does not establish it.
 - Current-version Discord audio in both directions and video separately. No

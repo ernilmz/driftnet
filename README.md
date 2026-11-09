@@ -120,18 +120,24 @@ forces a sign-in.
 
 ## Verification status
 
-The **1.0.3 follow-up is in progress**. It corrects Windows canonical-path matching
-and expands only the optional Discord installation rule to its updater and numeric
-version directories, so a newly installed Discord version can remain selected
-within the same Access session. Process SID checks and installation boundaries
-remain required; custom apps continue to match exact executables.
+Version **1.0.3** fixes Windows canonical-path matching and includes Discord's
+updater and new numeric version directories in the same Access session. It also
+fixes a Windows shutdown deadlock and validates application paths under the
+verified user's token before privileged network setup.
 
-This follows a Windows 1.0.2 user report of Discord staying on **Checking for
-Updates** on Superonline/Vodafone while websites worked. A local public manifest
-request returned HTTP 200 with both normal TLS negotiation and forced TLS 1.2;
-that probe does not establish Windows routing or compatibility on either provider.
-Native 1.0.3 CI and affected-device acceptance have not run yet. No current-version
-voice/video result is claimed.
+All four jobs in [checks 42721284794](https://github.com/ernilmz/driftnet/actions/runs/42721284794) passed. Native Windows acceptance
+passed all **19 installer/routing checks**, including the real installed Rust
+agent, generic app selection, Discord updater, a version installed during Access,
+unrelated DIRECT traffic, a real TLS 1.2 update manifest request and clean shutdown.
+[Focused Windows security checks](https://github.com/ernilmz/driftnet/actions/runs/42721300277) also passed identity, junction,
+identification-level pipe and impersonation/reversion boundaries.
+
+The complete release manifest, all three installers and checksum list were signed
+and verified with the production updater verifier. The matching router source built
+offline for macOS arm64, Windows x64 and Linux x64/arm64. Actual Discord startup on
+the reported Superonline/Vodafone connections, physical Windows 10 acceptance and
+current-version voice/video remain user checks. CI endpoint success does not
+establish provider-wide compatibility or call quality.
 
 ### Earlier release evidence
 

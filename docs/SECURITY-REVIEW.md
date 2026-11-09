@@ -24,6 +24,9 @@ The OS thread stays pinned through checked reversion; a reversion failure stops
 the helper rather than returning an impersonated thread to the scheduler.
 Privileged router construction reuses the validated patterns without reopening
 the client-supplied paths.
+The boundary follows Microsoft's documentation for
+[LocalSystem network identity](https://learn.microsoft.com/en-us/windows/win32/services/localsystem-account)
+and [failure handling for RevertToSelf](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-reverttoself).
 
 The first installed-agent regression exposed a separate Windows shutdown
 deadlock: a blocking read on a cloned synchronous pipe prevented writing the stop
@@ -36,7 +39,10 @@ All nonempty Windows app selections require the new helper capability. Older
 helpers fail with an installer-update message instead of reporting working app
 routing while silently using DIRECT. New Windows tests cover aliases, bounded
 family matches, unrelated executables, foreign owners and junction escapes.
-Native installer and signed-byte acceptance for this release is pending.
+Native installer acceptance passed all 19 Windows checks in [run 42721284794](https://github.com/ernilmz/driftnet/actions/runs/42721284794).
+All four CI jobs and [focused identity/reversion checks](https://github.com/ernilmz/driftnet/actions/runs/42721300277) passed.
+The actual manifest, all three full installers and signed checksum list passed
+production signature, corruption and version-binding verification.
 The previous release's evidence below remains historical.
 
 ## 1.0.2 compatibility follow-up — 10 November 2026

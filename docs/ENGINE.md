@@ -29,13 +29,17 @@ root, a same-named app elsewhere, or a child junction that resolves outside it.
 Custom application rules retain exact executable matching; a moved custom app
 can require reselecting it. Authenticated socket-owner SID checks still apply to
 both exact and Discord-family rules.
+Filesystem validation uses the SID-verified user token, including pipe clients
+with identification-only SQOS. Checked reversion precedes privileged router
+construction, which reuses the validated patterns without reopening paths.
 
 Windows 1.0.3 normalizes Rust's extended-length `\\?\` canonical paths and DOS/UNC
 process paths to one spelling before matching. Reparse points are resolved before
 process selection. The previous mismatch could leave an intended app on direct
 egress even though the separate website PAC path worked. These changes address
 routing identity; they do not establish that an ISP accepts the resulting TLS
-traffic. Native 1.0.3 acceptance is pending.
+traffic. Native Windows 1.0.3 acceptance passed all 19 installer/routing checks in
+[checks 42721284794](https://github.com/ernilmz/driftnet/actions/runs/42721284794); affected-provider device acceptance remains separate.
 
 Native routing does not depend on proxy launch arguments; a selected executable
 can close and reopen while its lease stays active. Protected processes and
