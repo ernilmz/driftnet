@@ -65,7 +65,11 @@ func TestWindowsProcessJunctionResolvesOutsideSelectedFamily(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.EqualFold(resolved, executable) {
-		t.Fatalf("junction stayed inside apparent family: %q", resolved)
+	canonicalOutside, err := driftCanonicalProcessPath(executable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.EqualFold(resolved, canonicalOutside) {
+		t.Fatalf("junction stayed inside apparent family: got %q want %q", resolved, canonicalOutside)
 	}
 }

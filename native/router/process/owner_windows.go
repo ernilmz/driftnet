@@ -38,14 +38,39 @@ func driftOwnerAllowed(info *adapter.ConnectionOwner) bool {
 }
 
 func driftCanonicalProcessPath(path string) (string, error) {
-	resolved, err := filepath.EvalSymlinks(path)
+	encoded, err := windows.UTF16PtrFromString(path)
 	if err != nil {
 		return "", err
 	}
-	if strings.HasPrefix(strings.ToUpper(resolved), `\\?\UNC\`) {
-		resolved = `\\` + resolved[8:]
-	} else {
-		resolved = strings.TrimPrefix(resolved, `\\?\`)
+	// Resolve the opened image's real DOS name in the OS, like Rust's
+	// canonicalize. Go's component walk can fail for valid junctions whose
+	// targets contain short 8.3 aliases, even when opening the file succeeds.
+	file, err := windows.CreateFile(encoded, windows.FILE_READ_ATTRIBUTES,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		return "", err
 	}
-	return filepath.Clean(resolved), nil
+	defer windows.CloseHandle(file)
+	buffer := make([]uint16, 512)
+	for {
+		size, err := windows.GetFinalPathNameByHandle(file, &buffer[0], uint32(len(buffer)), 0)
+		if err != nil {
+			return "", err
+		}
+		if size == 0 || size > 32767 {
+			return "", windows.ERROR_INVALID_DATA
+		}
+		if size >= uint32(len(buffer)) {
+			buffer = make([]uint16, size+1)
+			continue
+		}
+		resolved := windows.UTF16ToString(buffer[:size])
+		if strings.HasPrefix(strings.ToUpper(resolved), `\\?\UNC\`) {
+			resolved = `\\` + resolved[8:]
+		} else {
+			resolved = strings.TrimPrefix(resolved, `\\?\`)
+		}
+		return filepath.Clean(resolved), nil
+	}
 }

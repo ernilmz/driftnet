@@ -19,7 +19,12 @@ func TestWindowsCanonicalExecutableMatchesProcessMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	matcher := regexp.MustCompile(patterns[0])
-	if !matcher.MatchString(app) || !matcher.MatchString(strings.ToUpper(app)) {
+	metadata, err := filepath.EvalSymlinks(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadata = normalizeAppPath(metadata)
+	if !matcher.MatchString(metadata) || !matcher.MatchString(strings.ToUpper(metadata)) {
 		t.Fatalf("Rust canonical path did not match DOS process metadata: path=%q pattern=%q TEMP=%q", app, patterns[0], os.Getenv("TEMP"))
 	}
 	if matcher.MatchString(app + ".other") {
@@ -37,6 +42,11 @@ func TestWindowsDiscordFamilyIsBoundedAndSurvivesUpdates(t *testing.T) {
 	}
 	resolved, resolveErr := filepath.EvalSymlinks(root)
 	t.Logf("family root=%q resolved=%q err=%v TEMP=%q", root, resolved, resolveErr, os.Getenv("TEMP"))
+	if resolveErr != nil {
+		t.Fatal(resolveErr)
+	}
+	// Model Rust canonicalize, which expands the runner's TEMP 8.3 alias.
+	root = normalizeAppPath(resolved)
 	patterns, err := appPatterns([]App{{Path: `\\?\` + root, Family: "discord"}})
 	if err != nil {
 		t.Fatal(err)
