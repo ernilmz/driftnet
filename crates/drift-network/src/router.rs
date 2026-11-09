@@ -240,11 +240,19 @@ impl Lease {
         channel.set_read_timeout(None)?;
         let alive = Arc::new(AtomicBool::new(true));
         let flag = alive.clone();
+        #[cfg(unix)]
         let mut reader = channel.try_clone()?;
+        #[cfg(windows)]
+        let reader = channel.try_clone()?;
         let (send, done) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
-            let mut line = String::new();
-            let _ = std::io::Read::take(BufReader::new(&mut reader), 8192).read_line(&mut line);
+            #[cfg(windows)]
+            wait_for_windows_lease_end(&reader, &flag);
+            #[cfg(unix)]
+            {
+                let mut line = String::new();
+                let _ = std::io::Read::take(BufReader::new(&mut reader), 8192).read_line(&mut line);
+            }
             flag.store(false, Ordering::Release);
             let _ = send.send(());
         });
@@ -262,6 +270,34 @@ impl Drop for Lease {
     fn drop(&mut self) {
         let _ = self.channel.write_all(b"stop\n");
         let _ = self.done.recv_timeout(Duration::from_secs(15));
+        self.alive.store(false, Ordering::Release);
+    }
+}
+
+#[cfg(windows)]
+fn wait_for_windows_lease_end(channel: &Channel, alive: &AtomicBool) {
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::System::Pipes::PeekNamedPipe;
+    // A pending ReadFile on a synchronous pipe also locks writes through
+    // try_clone's shared FILE_OBJECT. Poll without reading so Drop can send
+    // stop. The helper emits its next byte only after routing teardown.
+    while alive.load(Ordering::Acquire) {
+        let mut available = 0;
+        // SAFETY: connected live handle, valid output pointer, no data buffer.
+        let ok = unsafe {
+            PeekNamedPipe(
+                channel.as_raw_handle(),
+                std::ptr::null_mut(),
+                0,
+                std::ptr::null_mut(),
+                &mut available,
+                std::ptr::null_mut(),
+            )
+        };
+        if ok == 0 || available > 0 {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(25));
     }
 }
 
@@ -329,5 +365,90 @@ mod tests {
         )
         .unwrap();
         assert!(!wrong_protocol.accepts(true));
+    }
+}
+
+#[cfg(all(test, windows))]
+mod windows_pipe_tests {
+    use super::wait_for_windows_lease_end;
+    use std::{
+        fs::{File, OpenOptions},
+        io::{Read, Write},
+        os::windows::io::{AsRawHandle, FromRawHandle},
+        sync::{Arc, atomic::AtomicBool, mpsc},
+        thread,
+        time::Duration,
+    };
+    use windows_sys::Win32::Foundation::{ERROR_PIPE_CONNECTED, INVALID_HANDLE_VALUE};
+
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        #[link_name = "CreateNamedPipeW"]
+        fn create_named_pipe(
+            name: *const u16,
+            access: u32,
+            mode: u32,
+            instances: u32,
+            output_size: u32,
+            input_size: u32,
+            timeout: u32,
+            security: *const std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
+        #[link_name = "ConnectNamedPipe"]
+        fn connect_named_pipe(
+            pipe: *mut std::ffi::c_void,
+            overlapped: *mut std::ffi::c_void,
+        ) -> i32;
+    }
+
+    #[test]
+    fn synchronous_pipe_monitor_does_not_block_stop_writes() {
+        let name = format!(r"\\.\pipe\Driftnet.Lease.Test.{}", std::process::id());
+        let wide: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
+        // SAFETY: terminated name, no security attributes, synchronous duplex
+        // byte pipe; the returned handle is immediately transferred to File.
+        let handle =
+            unsafe { create_named_pipe(wide.as_ptr(), 3, 0, 1, 4096, 4096, 0, std::ptr::null()) };
+        assert_ne!(handle, INVALID_HANDLE_VALUE);
+        // SAFETY: unique owned valid handle from CreateNamedPipeW.
+        let mut server = unsafe { File::from_raw_handle(handle) };
+        let server = thread::spawn(move || {
+            // SAFETY: live owned pipe, synchronous operation without OVERLAPPED.
+            let connected =
+                unsafe { connect_named_pipe(server.as_raw_handle(), std::ptr::null_mut()) };
+            assert!(
+                connected != 0
+                    || std::io::Error::last_os_error().raw_os_error()
+                        == Some(ERROR_PIPE_CONNECTED as i32)
+            );
+            let mut stop = [0; 5];
+            server.read_exact(&mut stop).unwrap();
+            assert_eq!(&stop, b"stop\n");
+            server.write_all(b"{\"ok\":true}\n").unwrap();
+        });
+        let mut client = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(name)
+            .unwrap();
+        let reader = client.try_clone().unwrap();
+        let alive = Arc::new(AtomicBool::new(true));
+        let (started, ready) = mpsc::channel();
+        let monitor = thread::spawn(move || {
+            started.send(()).unwrap();
+            wait_for_windows_lease_end(&reader, &alive);
+        });
+        ready.recv_timeout(Duration::from_secs(2)).unwrap();
+        thread::sleep(Duration::from_millis(75));
+        let (written, done) = mpsc::channel();
+        let writer = thread::spawn(move || {
+            client.write_all(b"stop\n").unwrap();
+            written.send(()).unwrap();
+        });
+        done.recv_timeout(Duration::from_secs(2))
+            .expect("stop write blocked behind the pipe monitor");
+        writer.join().unwrap();
+        server.join().unwrap();
+        monitor.join().unwrap();
     }
 }
