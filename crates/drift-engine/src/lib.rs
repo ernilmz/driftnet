@@ -46,11 +46,8 @@ impl Engine {
                 &port.to_string(),
                 "--max-conn",
                 "256",
-                "--split",
-                "2",
-                "--tlsrec",
-                "1+s",
             ])
+            .args(compatibility_args())
             .env_remove("SS_LOCAL_PORT")
             .env_remove("SS_PLUGIN_OPTIONS")
             .stdin(Stdio::piped())
@@ -105,6 +102,59 @@ impl Drop for Engine {
     fn drop(&mut self) {
         let _ = self.stop();
     }
+}
+/// Keep the known-working method first. Retry only a buffered TLS ClientHello
+/// (enforced by the bundled native guard), never an HTTP/application request.
+/// No ISP lookup, external configuration, or machine-wide TTL/DNS change.
+fn compatibility_args() -> Vec<&'static str> {
+    let mut args = vec![
+        "--tls-timeout",
+        "1.5:1:4096",
+        "--cache-ttl",
+        "300",
+        "--split",
+        "2",
+        "--tlsrec",
+        "1+s",
+        "--auto=torst,ssl_err",
+        "--proto",
+        "tls",
+        "--cache-ttl",
+        "300",
+        "--split",
+        "1+s",
+        "--tlsrec",
+        "3+s",
+    ];
+    if cfg!(windows) {
+        // ByeDPI's Windows SNI disorder method; do not pass platform-specific
+        // fake-packet/TCP-timeout options to macOS builds.
+        args.extend([
+            "--auto=torst,ssl_err",
+            "--proto",
+            "tls",
+            "--cache-ttl",
+            "300",
+            "--split",
+            "1+s",
+            "--disorder",
+            "3+s",
+            "--tlsrec",
+            "3+s",
+        ]);
+    }
+    // Some middleboxes reject TLS record splitting itself. Keep a TCP-only
+    // SNI split as the final method, with the same finite per-destination cache.
+    args.extend([
+        "--auto=torst,ssl_err",
+        "--proto",
+        "tls",
+        "--cache-ttl",
+        "300",
+        "--split",
+        "1+s",
+    ]);
+    args
 }
 fn socks_ready(endpoint: SocketAddrV4) -> bool {
     let Ok(mut socket) =

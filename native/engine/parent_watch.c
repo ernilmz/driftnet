@@ -2,6 +2,7 @@
  * The inherited stdin pipe is a lifetime lease, never user/traffic input.
  * If the owner crashes, EOF terminates the engine and releases its sockets. */
 #include <stdlib.h>
+#include <stdint.h>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
@@ -23,6 +24,16 @@ static void *watch_parent(void *unused) {
 }
 #endif
 int byedpi_main(int argc, char **argv);
+/* Replaying application requests can duplicate side effects. Only an entire,
+ * single ClientHello record is eligible: no extra TLS records/0-RTT data,
+ * coalesced messages, partial handshake, or arbitrary TCP/HTTP request. */
+int drift_tls_hello_only(const char *data, size_t size) {
+    const uint8_t *p = (const uint8_t *)data;
+    if (size < 9 || p[0] != 22 || p[1] != 3 || p[5] != 1) return 0;
+    size_t record = ((size_t)p[3] << 8) | p[4];
+    size_t hello = ((size_t)p[6] << 16) | ((size_t)p[7] << 8) | p[8];
+    return record + 5 == size && hello + 4 == record;
+}
 int main(int argc, char **argv) {
 #ifdef _WIN32
     HANDLE thread = CreateThread(NULL, 0, watch_parent, NULL, 0, NULL);

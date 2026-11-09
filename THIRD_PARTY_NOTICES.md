@@ -8,7 +8,7 @@ Original Driftnet code is MIT licensed. Dependency and asset licenses remain sep
   resolution is recorded in Cargo.lock and ui/package-lock.json.
 - Application icons and website favicons are fetched/extracted at runtime for
   identification. They belong to their respective owners and are not relicensed
-  by Driftnetnet's MIT license. Driftnet is not affiliated with Discord or those websites.
+  by Driftnet's MIT license. Driftnet is not affiliated with Discord or those websites.
 - ByeDPI 17.3 by hufrea: MIT, original source vendored in `vendor/byedpi`, pinned
   commit `e2684772fbda45f2ff4fc220922a010370534216`. `UPSTREAM.json` records
   source hashes. Built as the bundled `drift-engine` helper. Its license and
@@ -18,7 +18,10 @@ Original Driftnet code is MIT licensed. Dependency and asset licenses remain sep
 The original vendored files remain unchanged. During compilation, Driftnet applies
 the documented `native/engine/fixes.json` patch to a temporary copy of desync.c.
 It preserves the unsent tail when a nonblocking send succeeds partially, preventing
-data loss under TCP backpressure. The patch and upstream notices ship in resources.
+data loss under TCP backpressure. Additional documented integration patches bind
+outbound sockets to the physical interface and restrict automatic reconnection to
+a complete buffered TLS ClientHello. HTTP requests and buffered TLS early/application
+data cannot be automatically replayed. Patches and upstream notices ship in resources.
 
 - sing-box 1.14.4 by SagerNet: GPL-3.0-or-later, separate `drift-router`
   executable built from the pinned `vendor/sing-box` source. Its per-file hash

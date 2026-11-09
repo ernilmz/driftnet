@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "product": "Driftnet",
   "repository": "ernilmz/driftnet",
   "application_identifier": "app.drift.desktop",
@@ -43,7 +43,7 @@
     "macos_installed_acceptance": "bundle_version_verified_2026_11_10_native_acceptance_below_is_historical_1_0_0",
     "macos_discord_reopen": "three_normal_cycles_same_continuous_1_0_0_session_passed",
     "macos_website_policy": "actual_CFNetwork_selected_proxy_unselected_direct_URLSession_gateway_HTTP200_passed",
-    "macos_1_0_1_package": "built_bundled_engine_smoke_passed_not_yet_installed",
+    "macos_1_0_1_package": "historical_release_package_verified_separately_from_later_installed_1_0_1_bundle",
     "macos_1_0_1_final_privacy_signatures": "passed_29_file_privacy_license_BOM_and_actual_signature_checks",
     "macos_native_ci": "passed_f108eee_run_42375361885",
     "linux_native_ci": "passed_f108eee_run_42375361885_systemd_TUN_GNOME_PAC_GLib",
@@ -90,6 +90,12 @@
       "commits": 23,
       "blobs": 1988,
       "private_key_GitHub_AWS_actual_developer_path_matches": 0
+    },
+    "superonline_followup": {
+      "date": "2026-11-10",
+      "target": "Windows 10/11 x64",
+      "change": "TLS-only automatic compatibility chain plus DoH via owned engine",
+      "physical_superonline_line": "not_available_here; provider acceptance unverified"
     }
   },
   "production_publisher_signing": {

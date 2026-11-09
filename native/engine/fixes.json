@@ -10,5 +10,11 @@
     "reason": "Bind outbound TCP/UDP to the pre-tunnel interface so the local router cannot reassemble the engine\u2019s wire fragmentation.",
     "before": "int socket_mod(int fd)\n{",
     "after": "extern int drift_bind_outbound(int fd);\nint socket_mod(int fd)\n{\n    if (drift_bind_outbound(fd) < 0) return -1;"
+  },
+  {
+    "source": "extend.c",
+    "reason": "Only reconnect a complete initial TLS ClientHello; never replay HTTP requests or TLS early/application data when trying compatibility methods.",
+    "before": "    bool before_req = !lav->recv_count && !val->recv_count;\n    \n    bool can_reconn = ((lav->sq_buff || before_req) && client_alive);",
+    "after": "    bool before_req = !lav->recv_count && !val->recv_count;\n    extern int drift_tls_hello_only(const char *, size_t);\n    if (!before_req && (!lav->sq_buff\n            || lav->recv_count != lav->sq_buff->lock\n            || !drift_tls_hello_only(lav->sq_buff->data, lav->sq_buff->lock))) {\n        return -1;\n    }\n    bool can_reconn = ((lav->sq_buff || before_req) && client_alive);"
   }
 ]

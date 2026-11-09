@@ -41,8 +41,10 @@ impl Resolver {
             .use_rustls_tls()
             .https_only(true)
             .redirect(reqwest::redirect::Policy::none())
-            .connect_timeout(Duration::from_secs(2))
-            .timeout(Duration::from_secs(4))
+            // Leave time for the bounded TLS strategy chain (four attempts on
+            // Windows). A failed resolver still cannot stall indefinitely.
+            .connect_timeout(Duration::from_secs(8))
+            .timeout(Duration::from_secs(10))
             .resolve("cloudflare-dns.com", SocketAddr::from(([1, 1, 1, 1], 443)))
             .resolve("dns.google", SocketAddr::from(([8, 8, 8, 8], 443)))
             .build()?;

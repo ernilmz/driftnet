@@ -1,7 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.0.2 — 2026-11-10
 
+- Preserve the original connection method and automatically try SNI-based TLS
+  alternatives after an initial handshake reset, invalid response or timeout.
+  Windows includes an additional SNI disorder method for filtered fiber uplinks,
+  including Superonline compatibility testing. Provider-specific acceptance is
+  still required; no universal ISP result is claimed.
+- Bound TLS handshake retries and expire learned destination methods after five
+  minutes. Retry only a complete buffered ClientHello, preventing automatic replay
+  of HTTP requests or buffered TLS early/application data. Preserve UDP relay.
+- Allow encrypted DNS enough time to use the bounded compatibility chain.
 - Send selected-site encrypted DNS through the local engine too, fixing broker
   failures on networks that reset direct DNS-over-HTTPS connections. Keep pinned
   resolver bootstrap addresses and TLS hostname/certificate verification.
