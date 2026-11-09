@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::{
     collections::HashMap,
-    net::{IpAddr, SocketAddr},
+    net::{IpAddr, SocketAddr, SocketAddrV4},
     sync::Mutex,
     time::{Duration, Instant},
 };
@@ -29,10 +29,18 @@ pub struct Resolver {
     cache: Mutex<HashMap<String, Entry>>,
 }
 impl Resolver {
-    pub fn new() -> Result<Self, reqwest::Error> {
+    pub fn new(engine: SocketAddrV4) -> Result<Self, reqwest::Error> {
         let client = reqwest::Client::builder()
             .no_proxy()
+            // DoH needs the same wire fragmentation as selected destinations.
+            // socks5 (not socks5h) keeps bootstrap resolution in this client,
+            // where the fixed resolver IPs below avoid a system-DNS dependency.
+            .proxy(reqwest::Proxy::all(format!("socks5://{engine}"))?)
+            // Keep DoH TLS framing consistent across platforms, including
+            // builds where the desktop updater also enables native-tls.
+            .use_rustls_tls()
             .https_only(true)
+            .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(Duration::from_secs(2))
             .timeout(Duration::from_secs(4))
             .resolve("cloudflare-dns.com", SocketAddr::from(([1, 1, 1, 1], 443)))
@@ -123,5 +131,73 @@ impl Resolver {
         Err(std::io::Error::other(
             "Could not resolve the selected destination over trusted DNS",
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+        time::timeout,
+    };
+
+    #[tokio::test]
+    async fn trusted_dns_bootstrap_uses_engine_and_preserves_tls_hostnames() {
+        let engine = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let SocketAddr::V4(endpoint) = engine.local_addr().unwrap() else {
+            unreachable!()
+        };
+        let resolver = Resolver::new(endpoint).unwrap();
+        for (host, ip) in [
+            ("cloudflare-dns.com", [1, 1, 1, 1]),
+            ("dns.google", [8, 8, 8, 8]),
+        ] {
+            let client = resolver.client.clone();
+            let request = tokio::spawn(async move {
+                client
+                    .get(format!("https://{host}/dns-query?name=example.com&type=A"))
+                    .send()
+                    .await
+            });
+            // A direct DoH request or proxy-side hostname lookup must fail this
+            // regression even on hosts without internet or working system DNS.
+            let (mut stream, _) = timeout(Duration::from_secs(3), engine.accept())
+                .await
+                .expect("DoH bypassed the owned engine")
+                .unwrap();
+            timeout(Duration::from_secs(3), async {
+                let mut greeting = [0; 3];
+                stream.read_exact(&mut greeting).await.unwrap();
+                assert_eq!(greeting, [5, 1, 0]);
+                stream.write_all(&[5, 0]).await.unwrap();
+                let mut connect = [0; 10];
+                stream.read_exact(&mut connect).await.unwrap();
+                assert_eq!(connect[..4], [5, 1, 0, 1]);
+                assert_eq!(connect[4..8], ip);
+                assert_eq!(connect[8..], 443u16.to_be_bytes());
+                stream
+                    .write_all(&[5, 0, 0, 1, 127, 0, 0, 1, 0, 0])
+                    .await
+                    .unwrap();
+                let mut header = [0; 5];
+                stream.read_exact(&mut header).await.unwrap();
+                assert_eq!(header[0], 22, "resolver connection must use TLS");
+                let mut hello = vec![0; u16::from_be_bytes([header[3], header[4]]) as usize];
+                stream.read_exact(&mut hello).await.unwrap();
+                assert!(
+                    hello
+                        .windows(host.len())
+                        .any(|bytes| bytes == host.as_bytes())
+                );
+            })
+            .await
+            .expect("DoH SOCKS/TLS handshake timed out");
+            // The mock stops before the server's TLS handshake. It never
+            // presents a trusted certificate or provides a DNS answer.
+            drop(stream);
+            assert!(request.await.unwrap().is_err());
+        }
     }
 }

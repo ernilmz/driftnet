@@ -11,6 +11,7 @@
     "optional_discord_preset": true,
     "discord_not_required": true,
     "website_doh_a_aaaa_failover": true,
+    "website_doh_via_owned_engine": true,
     "signed_full_installer_updates": true,
     "macos_combined_pkg": true,
     "windows_combined_nsis": true,
@@ -28,8 +29,18 @@
     "installation": "normal_os_installer_with_administrator_consent"
   },
   "verification": {
-    "macos_installed_version": "1.0.0",
-    "macos_installed_acceptance": "user_working_AccessOn_receipt_helpers_and_payload_hashes_verified",
+    "vodafone_doh_followup": {
+      "date": "2026-11-10",
+      "platform": "macOS arm64",
+      "scope": "one_Vodafone_Net_IPv4_uplink_no_cross_provider_comparison",
+      "direct_and_plain_relay_doh": "each_0_of_6_TLS_connections_succeeded",
+      "current_engine_profile_doh": "6_of_6_succeeded",
+      "fixed_release_agent": "passed_full_probe_network_script_with_explicit_rustls_DNS_via_engine",
+      "system_settings": "probe_mode_no_OS_routing_proxy_or_DNS_lease",
+      "native_Discord_and_voice_video": "not_tested_in_this_followup"
+    },
+    "macos_installed_version": "1.0.1",
+    "macos_installed_acceptance": "bundle_version_verified_2026_11_10_native_acceptance_below_is_historical_1_0_0",
     "macos_discord_reopen": "three_normal_cycles_same_continuous_1_0_0_session_passed",
     "macos_website_policy": "actual_CFNetwork_selected_proxy_unselected_direct_URLSession_gateway_HTTP200_passed",
     "macos_1_0_1_package": "built_bundled_engine_smoke_passed_not_yet_installed",

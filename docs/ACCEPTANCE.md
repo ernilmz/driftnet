@@ -1,10 +1,30 @@
 # Acceptance record
 
-Release target: **1.0.1**. Updated: **7 November 2026**.
+Release target: **1.0.1**. Updated: **10 November 2026**.
 
-The installed local macOS app is **1.0.0**. It remains in the user's working Access
-session; a built 1.0.1 installer is not counted as an already installed upgrade.
-This record separates observed results from remaining acceptance.
+The release rows below retain the **7 November** evidence and its installation
+limits. The follow-up below records the later Vodafone compatibility work
+separately. This record separates observed results from remaining acceptance.
+
+## Vodafone DNS compatibility follow-up — 10 November 2026
+
+The local installed bundle was verified as **1.0.1** before this fix. On one
+Vodafone Net IPv4 uplink, both pinned DoH resolvers reset direct TLS connections.
+Three attempts per resolver failed both directly and through an unmodified local
+SOCKS relay (0/6 for each mode); the existing engine fragmentation profile succeeded
+6/6. The installed agent's app/site brokers returned CONNECT 502, including for an
+otherwise reachable control website. This does not establish a Vodafone-wide
+policy or compare other providers on the same device.
+
+The corrected macOS arm64 release agent routes DoH through its owned engine and
+uses rustls explicitly. `scripts/probe-network.py --release` passed Discord
+gateway/avatar/update/website HTTP 200, the Windows download redirect/range
+HTTP 206 with 65,536 bytes, selected-site HTTP 200, unselected-site CONNECT 403,
+PAC boundaries, listener cleanup, owner EOF during setup and a generic website-only
+session. Probe mode did not acquire an OS routing/proxy/DNS lease. An offline
+SOCKS/TLS regression verifies both pinned bootstrap IPs and resolver TLS hostnames.
+All 38 macOS workspace tests passed, including the five compiled-engine checks.
+Native Discord application routing and actual audio/video remain separate checks.
 
 ## Implemented contract
 

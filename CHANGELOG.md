@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Send selected-site encrypted DNS through the local engine too, fixing broker
+  failures on networks that reset direct DNS-over-HTTPS connections. Keep pinned
+  resolver bootstrap addresses and TLS hostname/certificate verification.
+- Use rustls explicitly for the DNS client so its TLS handshake works through
+  the engine on macOS as well as other platforms; the updater keeps native TLS.
+
 ## 1.0.1 — 2026-11-07
 
 - Pin the local router to the fixed `golang.org/x/net` v0.60.0 dependency set.

@@ -52,9 +52,15 @@ and `discord.gg`, including their subdomains. PAC and broker use the same list.
 Other sites may need additional sign-in or media domains added explicitly.
 
 Selected public website names resolve through TLS-validated DoH endpoints with
-pinned resolver addresses. A/AAAA answers have bounded caches and staggered connection
-attempts. Resolver requests bypass inherited proxy environment variables. System
-DNS settings remain unchanged. This website resolver does not imply that every DNS
+pinned resolver addresses. DoH connections pass through the same owned local
+engine as selected destinations, so resolver TLS traffic also receives the TCP
+fragmentation profile. Resolver bootstrap uses the pinned IPs without system DNS;
+TLS still authenticates the resolver hostname. Redirects are refused. A/AAAA
+answers have bounded caches and staggered connection attempts. The DoH client
+explicitly uses rustls and its public CA roots for consistent TLS framing, even
+when another workspace component enables native TLS. Resolver requests bypass
+inherited proxy environment variables. System DNS settings remain unchanged.
+This website resolver does not imply that every DNS
 request made by a selected native app uses DoH.
 
 | Platform | Website settings lease |
