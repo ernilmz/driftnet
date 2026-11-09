@@ -1,0 +1,19 @@
+name: Windows router diagnostics
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  router:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: vendor/sing-box/go.sum
+      - name: Stage and build the exact router
+        run: python scripts/build-router.py --target x86_64-pc-windows-msvc
+      - name: Exercise Windows path identity and owner boundaries
+        working-directory: target/router-src
+        run: go test -v -tags with_gvisor ./cmd/drift-router ./common/process

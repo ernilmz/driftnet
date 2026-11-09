@@ -20,7 +20,7 @@ func TestWindowsCanonicalExecutableMatchesProcessMetadata(t *testing.T) {
 	}
 	matcher := regexp.MustCompile(patterns[0])
 	if !matcher.MatchString(app) || !matcher.MatchString(strings.ToUpper(app)) {
-		t.Fatal("Rust canonical path did not match DOS process metadata")
+		t.Fatalf("Rust canonical path did not match DOS process metadata: path=%q pattern=%q TEMP=%q", app, patterns[0], os.Getenv("TEMP"))
 	}
 	if matcher.MatchString(app + ".other") {
 		t.Fatal("exact app rule widened")
@@ -35,6 +35,8 @@ func TestWindowsDiscordFamilyIsBoundedAndSurvivesUpdates(t *testing.T) {
 	if err := os.Mkdir(root, 0700); err != nil {
 		t.Fatal(err)
 	}
+	resolved, resolveErr := filepath.EvalSymlinks(root)
+	t.Logf("family root=%q resolved=%q err=%v TEMP=%q", root, resolved, resolveErr, os.Getenv("TEMP"))
 	patterns, err := appPatterns([]App{{Path: `\\?\` + root, Family: "discord"}})
 	if err != nil {
 		t.Fatal(err)

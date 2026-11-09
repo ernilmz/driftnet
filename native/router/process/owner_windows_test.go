@@ -57,6 +57,10 @@ func TestWindowsProcessJunctionResolvesOutsideSelectedFamily(t *testing.T) {
 	if output, err := exec.Command("cmd.exe", "/c", "mklink", "/J", version, outside).CombinedOutput(); err != nil {
 		t.Fatalf("junction fixture: %s: %v", output, err)
 	}
+	linkTarget, linkErr := os.Readlink(version)
+	_, directErr := os.Stat(executable)
+	_, throughErr := os.Stat(filepath.Join(version, "Discord.exe"))
+	t.Logf("junction path=%q target=%q readlink=%v directStat=%v throughStat=%v TEMP=%q", version, linkTarget, linkErr, directErr, throughErr, os.Getenv("TEMP"))
 	resolved, err := driftCanonicalProcessPath(filepath.Join(version, "Discord.exe"))
 	if err != nil {
 		t.Fatal(err)

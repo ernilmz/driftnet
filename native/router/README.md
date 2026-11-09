@@ -9,6 +9,7 @@ The build copies them into target/router-src and adds the following Driftnet cod
 - macOS/Linux Unix-peer uid checking and Windows named-pipe token SID checking.
 - Process-owner filtering before any app-path match. Unknown ownership stays direct.
 - Exact executable or application-bundle prefix matching, never basename matching.
+  The optional Windows Discord preset also supports a bounded installation family.
 - Native TUN startup/stop using upstream's TCP/IP stack and original signed Wintun.
 - Windows service install/remove; Linux systemd integration; macOS app-removal
   and preference recovery.
@@ -19,6 +20,13 @@ and increment the counters. The Darwin connection finder also reads the kernelâ€
 delegated process id (xsocket_n.so_e_pid), verifies that process uid and uses its
 executable path, covering shared networking helpers without global helper matches. Original source is verified
 before applying the patch. native/router/process contains those additions.
+
+Windows rule and process paths normalize extended DOS/UNC aliases. After the SID
+check, process reparse points are resolved before matching. The Discord family is
+anchored to one canonical installation directory and includes only Update.exe and
+numeric app-<version>/Discord.exe paths, including a new version created during an
+active lease. Custom applications retain exact path rules. The Rust agent requires
+the updated Windows helper capability for every nonempty application selection.
 
 The Rust/C engine remains a separate process over SOCKS5, licensed separately.
 Its outbound sockets bind to the pre-tunnel interface so the routing stack cannot
