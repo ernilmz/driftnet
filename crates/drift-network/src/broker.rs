@@ -218,7 +218,7 @@ impl Servers {
         let site_port = site.local_addr()?.port();
         let app_port = app.local_addr()?.port();
         let pac_port = pac_listener.local_addr()?.port();
-        let resolver = Arc::new(Resolver::new().map_err(io::Error::other)?);
+        let resolver = Arc::new(Resolver::new(engine).map_err(io::Error::other)?);
         let permits = Arc::new(Semaphore::new(256));
         let (stop, rx) = watch::channel(false);
         let mut tasks = Vec::new();
