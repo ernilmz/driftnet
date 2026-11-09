@@ -1,5 +1,21 @@
 # Security review — Driftnet 1.0.1
 
+## 1.0.3 Windows attribution follow-up — 10 November 2026
+
+Windows application rules normalize Rust's extended canonical paths and native
+DOS process paths before matching. The optional Discord preset covers only
+`Update.exe` and `app-<numeric version>/Discord.exe` under its resolved installation
+root. Process owner SID verification remains mandatory; executable reparse points
+are resolved before matching so a redirected version directory cannot capture an
+outside executable. Exact generic-app selection remains exact.
+
+All nonempty Windows app selections require the new helper capability. Older
+helpers fail with an installer-update message instead of reporting working app
+routing while silently using DIRECT. New Windows tests cover aliases, bounded
+family matches, unrelated executables, foreign owners and junction escapes.
+Native installer and signed-byte acceptance for this release is pending.
+The previous release's evidence below remains historical.
+
 ## 1.0.2 compatibility follow-up — 10 November 2026
 
 The baseline review below concerns the original 1.0.1 bytes. Version 1.0.2 adds

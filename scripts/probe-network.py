@@ -18,11 +18,16 @@ p=subprocess.Popen([str(agent),'--probe'],stdin=subprocess.PIPE,stdout=subproces
 try:
     p.stdin.write(json.dumps(config)+'\n');p.stdin.flush()
     reply=json.loads(p.stdout.readline());assert reply['ok'],reply
-    def request(url,port):
-        result=subprocess.run(['curl','--silent','--show-error','--max-time','20','--noproxy','','--proxy',f'http://127.0.0.1:{port}','--output',__import__('os').devnull,'--write-out','%{http_code} %{http_connect}',url],capture_output=True,text=True)
+    def request(url,port,extra=()):
+        result=subprocess.run(['curl','--silent','--show-error','--max-time','20','--noproxy','','--proxy',f'http://127.0.0.1:{port}','--output',__import__('os').devnull,'--write-out','%{http_code} %{http_connect}',*extra,url],capture_output=True,text=True)
         return result.stdout.strip().split(),result.returncode
     for url in ['https://discord.com/api/v10/gateway','https://cdn.discordapp.com/embed/avatars/0.png','https://discord.com/api/updates/stable?platform=osx']:
         code,result=request(url,reply['app_port']);print(url.split('?')[0],code);assert result==0 and code==['200','200']
+    manifest='https://updates.discord.com/distributions/app/manifests/latest?channel=stable&platform=win&arch=x64&platform_version=10.0.19045&client_version=89799'
+    for extra in [(),('--tlsv1.2','--tls-max','1.2','--http1.1')]:
+        code,result=request(manifest,reply['app_port'],extra)
+        print('Windows Discord updater manifest', 'TLS 1.2' if extra else 'default TLS',code)
+        assert result==0 and code==['200','200']
     code,result=request('https://discord.com/download',reply['site_port']);print('Discord website without desktop app launch',code);assert code==['200','200'] and result==0
     download=subprocess.run(['curl','--silent','--show-error','--location','--max-time','30','--max-filesize','2097152','--range','0-65535','--noproxy','','--proxy',f"http://127.0.0.1:{reply['site_port']}",'--output',os.devnull,'--write-out','%{http_code} %{size_download} %{url_effective}','https://discord.com/api/downloads/distributions/app/installers/latest?arch=x64&channel=stable&platform=win'],capture_output=True,text=True)
     details=download.stdout.split();print('Windows Discord download redirect + partial transfer',details);assert download.returncode==0 and details[0]=='206' and int(details[1])==65536

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.3 — unreleased
+
+- Normalize Windows extended-length canonical paths (`\\?\`) to the same DOS/UNC
+  spelling used by process metadata. Previously a selected app could miss its
+  routing rule and use direct egress while website PAC rules still worked.
+- Scope the optional Windows Discord preset to one canonical installation root:
+  `Update.exe` and `app-<numeric version>/Discord.exe`, including a version created
+  during an existing Access session. Custom apps retain exact executable matching.
+- Preserve the authenticated process SID check and resolve reparse points before
+  matching; another directory or a redirected child outside the selected root
+  does not become a Discord match.
+- Record a local updater-manifest HTTP 200 probe with normal TLS negotiation and
+  forced TLS 1.2. Native 1.0.3 CI, affected Windows devices and provider-specific
+  Discord startup/voice acceptance remain pending.
+
 ## 1.0.2 — 2026-11-10
 
 - Preserve the original connection method and automatically try SNI-based TLS

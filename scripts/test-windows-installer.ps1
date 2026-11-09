@@ -30,6 +30,8 @@ $results = [ordered]@{
 }
 $lease = $null
 $engine = $null
+$agent = $null
+$agentFixture = Join-Path $env:RUNNER_TEMP ('driftnet-agent-' + [guid]::NewGuid().ToString('N'))
 $directCurl = Join-Path $env:RUNNER_TEMP ('driftnet-direct-' + [guid]::NewGuid().ToString('N') + '.exe')
 
 function Wait-Until([scriptblock]$Check, [string]$Description, [int]$Seconds = 30) {
@@ -267,6 +269,76 @@ try {
     if (-not $engine.WaitForExit(10000)) { throw 'Engine survived closing its lifetime pipe' }
     $engine.Dispose(); $engine = $null
 
+    Write-Host 'Exercising the installed Rust agent with normal Discord and exact-app rules'
+    $discordRoot = Join-Path $agentFixture 'Discord'
+    $initialVersion = Join-Path $discordRoot 'app-1.0.0'
+    New-Item -ItemType Directory -Force -Path $initialVersion | Out-Null
+    $updater = Join-Path $discordRoot 'Update.exe'
+    $discordExe = Join-Path $initialVersion 'Discord.exe'
+    $genericExe = Join-Path $agentFixture 'Editor.exe'
+    foreach ($destination in @($updater, $discordExe, $genericExe)) { Copy-Item $curl $destination }
+    $agentConfig = @{ schema_version = 1; rules = @(
+        @{id='c4ec487a-0111-4eec-9222-0123456789ab'; enabled=$true; target=@{kind='discord'}},
+        @{id='c4ec487a-0111-4eec-9222-0123456789ac'; enabled=$true; target=@{kind='app'; identity="windows:$genericExe"; display_name='Fixture Editor'}}
+    ) }
+    $agentStart = [Diagnostics.ProcessStartInfo]::new($agentPath)
+    $agentStart.UseShellExecute = $false
+    $agentStart.CreateNoWindow = $true
+    $agentStart.RedirectStandardInput = $true
+    $agentStart.RedirectStandardOutput = $true
+    $agentStart.RedirectStandardError = $true
+    $agentStart.Environment['LOCALAPPDATA'] = $agentFixture
+    $agent = [Diagnostics.Process]::Start($agentStart)
+    $agent.StandardInput.WriteLine(($agentConfig | ConvertTo-Json -Compress -Depth 6))
+    $agent.StandardInput.Flush()
+    $readyTask = $agent.StandardOutput.ReadLineAsync()
+    if (-not $readyTask.Wait(45000) -or $null -eq $readyTask.Result) { throw 'Installed Rust agent did not become ready' }
+    $agentReady = $readyTask.Result | ConvertFrom-Json
+    if (-not $agentReady.ok) { throw "Installed Rust agent failed: $($agentReady.error)" }
+    $agentTun = @(Get-NetAdapter -IncludeHidden | Where-Object Name -eq 'Drift')
+    if ($agentTun.Count -ne 1) { throw 'Rust agent did not create its native application tunnel' }
+    $agentTunIndex = $agentTun[0].ifIndex
+    $agentChecks = [ordered]@{}
+    $results.rustAgent = $agentChecks
+    foreach ($case in @(
+        @{Name='canonicalExactApp'; Path=$genericExe},
+        @{Name='discordUpdater'; Path=$updater},
+        @{Name='discordInitialVersion'; Path=$discordExe}
+    )) {
+        $prior = Get-RoutingStats
+        Assert-Curl $case.Path
+        $current = Get-RoutingStats
+        if ($current.selected -le $prior.selected) { throw "Rust-agent $($case.Name) traffic silently used DIRECT" }
+        $agentChecks[$case.Name] = $true
+    }
+    # Install a new app version after access starts: no toggle/reinstall required.
+    $nextVersion = Join-Path $discordRoot 'app-1.0.999'
+    New-Item -ItemType Directory -Force -Path $nextVersion | Out-Null
+    $nextExe = Join-Path $nextVersion 'Discord.exe'
+    Copy-Item $curl $nextExe
+    $prior = Get-RoutingStats
+    Assert-Curl $nextExe
+    $current = Get-RoutingStats
+    if ($current.selected -le $prior.selected) { throw 'Discord update changed its version and escaped selected routing' }
+    $agentChecks.discordNewVersion = $true
+    $prior = Get-RoutingStats
+    Assert-Curl $directCurl
+    $current = Get-RoutingStats
+    if ($current.direct -le $prior.direct -or $current.selected -ne $prior.selected) { throw 'Rust agent widened application selection to an unrelated executable' }
+    $agentChecks.unselectedDirect = $true
+    $prior = Get-RoutingStats
+    $manifestUrl = 'https://updates.discord.com/distributions/app/manifests/latest?channel=stable&platform=win&arch=x64&platform_version=10.0.19045&client_version=89799'
+    $manifestStatus = & $updater --ipv4 --noproxy '*' --tlsv1.2 --tls-max 1.2 --silent --show-error --fail --connect-timeout 15 --max-time 35 --output NUL --write-out '%{http_code}' $manifestUrl
+    if ($LASTEXITCODE -ne 0 -or $manifestStatus -ne '200') { throw "Discord TLS 1.2 update manifest failed: $manifestStatus (exit $LASTEXITCODE)" }
+    $current = Get-RoutingStats
+    if ($current.selected -le $prior.selected) { throw 'Discord update manifest bypassed selected application routing' }
+    $agentChecks.discordManifestTls12 = $true
+    $agent.StandardInput.Close()
+    if (-not $agent.WaitForExit(20000) -or $agent.ExitCode -ne 0) { throw 'Rust agent did not cleanly stop on owner EOF' }
+    $agent.Dispose(); $agent = $null
+    Wait-Until { @(Get-NetRoute -InterfaceIndex $agentTunIndex -ErrorAction SilentlyContinue).Count -eq 0 } 'Rust-agent TUN routes removed on EOF'
+    $agentChecks.cleanup = $true
+
     Write-Host 'Uninstalling and checking service, program files, and rules'
     Run-Checked (Join-Path $installDir 'uninstall.exe') @('/S') 120
     Wait-Until { $null -eq (Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue) } 'service removal'
@@ -291,6 +363,12 @@ try {
         if (-not $engine.WaitForExit(10000)) { $engine.Kill($true) }
         $engine.Dispose()
     }
+    if ($null -ne $agent) {
+        $agent.StandardInput.Close()
+        if (-not $agent.WaitForExit(20000)) { $agent.Kill($true) }
+        $agent.Dispose()
+    }
+    if (Test-Path $agentFixture) { Remove-Item $agentFixture -Recurse -Force -ErrorAction Continue }
     # Always attempt teardown after a failed assertion; this is a throwaway host.
     $cleanupRouter = Join-Path $installDir 'drift-router.exe'
     if ((Get-Service -Name DriftNetwork -ErrorAction SilentlyContinue) -and (Test-Path $cleanupRouter)) {

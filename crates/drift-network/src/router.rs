@@ -17,9 +17,17 @@ use std::{
     time::Duration,
 };
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+enum AppFamily {
+    #[cfg(windows)]
+    Discord,
+}
+#[derive(Serialize)]
 pub struct App {
     path: PathBuf,
     bundle: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    family: Option<AppFamily>,
 }
 #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
 #[derive(Serialize)]
@@ -37,11 +45,42 @@ struct Reply {
     protocol: u32,
     #[serde(default)]
     router: bool,
+    #[serde(default)]
+    app_families: bool,
     error: Option<String>,
+}
+#[cfg(any(target_os = "macos", windows, target_os = "linux"))]
+impl Reply {
+    fn accepts(&self, applications: bool) -> bool {
+        self.ok
+            && (!applications
+                || (self.protocol == 2 && self.router && (!cfg!(windows) || self.app_families)))
+    }
 }
 pub fn applications(config: &Config) -> io::Result<Vec<App>> {
     let mut apps = Vec::new();
     for rule in config.rules.iter().filter(|r| r.enabled) {
+        #[cfg(windows)]
+        if matches!(rule.target, Target::Discord) {
+            let root = PathBuf::from(
+                std::env::var_os("LOCALAPPDATA")
+                    .ok_or_else(|| io::Error::other("No local app data folder"))?,
+            )
+            .join("Discord");
+            // Select the installation, including Squirrel's updater and future
+            // numbered app directories, rather than only today's executable.
+            match root.canonicalize() {
+                Ok(path) if path.is_dir() => apps.push(App {
+                    path,
+                    bundle: false,
+                    family: Some(AppFamily::Discord),
+                }),
+                Ok(_) => return Err(io::Error::other("Invalid Discord installation")),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error),
+            }
+            continue;
+        }
         let (identity, optional) = match &rule.target {
             Target::Discord => (
                 if cfg!(target_os = "macos") {
@@ -58,6 +97,7 @@ pub fn applications(config: &Config) -> io::Result<Vec<App>> {
             Ok(path) => apps.push(App {
                 path: path.canonicalize()?,
                 bundle: cfg!(target_os = "macos"),
+                family: None,
             }),
             Err(e) if optional && e.kind() == io::ErrorKind::NotFound => {}
             Err(e) => return Err(e),
@@ -190,7 +230,7 @@ impl Lease {
         let mut line = String::new();
         std::io::Read::take(BufReader::new(channel.try_clone()?), 8192).read_line(&mut line)?;
         let reply: Reply = serde_json::from_str(&line)?;
-        if !reply.ok || (!apps.is_empty() && (reply.protocol != 2 || !reply.router)) {
+        if !reply.accepts(!apps.is_empty()) {
             let _ = channel.write_all(b"stop\n");
             return Err(io::Error::other(reply.error.unwrap_or_else(|| {
                 "Update Driftnet using the new installer to enable application routing.".into()
@@ -265,5 +305,29 @@ fn verify_service(channel: &Channel) -> io::Result<()> {
             ));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Reply;
+
+    #[test]
+    fn windows_applications_require_the_path_and_family_capability() {
+        let legacy: Reply =
+            serde_json::from_str(r#"{"ok":true,"protocol":2,"router":true,"error":null}"#).unwrap();
+        assert!(legacy.accepts(false));
+        // Even an exact generic app needs the new path-normalizing helper.
+        assert_eq!(legacy.accepts(true), !cfg!(windows));
+        let current: Reply = serde_json::from_str(
+            r#"{"ok":true,"protocol":2,"router":true,"app_families":true,"error":null}"#,
+        )
+        .unwrap();
+        assert!(current.accepts(true));
+        let wrong_protocol: Reply = serde_json::from_str(
+            r#"{"ok":true,"protocol":1,"router":true,"app_families":true,"error":null}"#,
+        )
+        .unwrap();
+        assert!(!wrong_protocol.accepts(true));
     }
 }

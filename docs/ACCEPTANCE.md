@@ -1,10 +1,34 @@
 # Acceptance record
 
-Release target: **1.0.2**. Updated: **10 November 2026**.
+Release target: **1.0.3 (pending acceptance)**. Updated: **10 November 2026**.
 
-The release rows below retain the **7 November** evidence and its installation
-limits. The follow-up below records the later Vodafone compatibility work
-separately. This record separates observed results from remaining acceptance.
+This record separates the current follow-up from observed earlier releases.
+The 1.0.2 and 1.0.1 results below are historical evidence for those exact builds;
+they do not count as native acceptance of 1.0.3.
+
+## Windows Discord updater routing follow-up — 1.0.3
+
+A Windows 1.0.2 user reported that Discord stayed on **Checking for Updates** on
+Superonline/Vodafone while websites worked. The routing review found two concrete
+limitations: Rust's extended-length canonical paths could fail to match DOS process
+paths, and selecting one existing Discord version omitted its updater and a later
+version. The follow-up normalizes path spelling and limits the optional Discord
+family to `Update.exe` and numeric `app-<version>/Discord.exe` beneath a canonical
+installation root. Process SID checks remain mandatory, and reparse points are
+resolved before selection. This is not a rule for arbitrary same-named programs.
+
+On the current local connection, the public updater manifest returned HTTP 200
+with both normal TLS negotiation and forced TLS 1.2. This was not a test on the
+affected Windows device or either reported provider. Native 1.0.3 CI has not run;
+installer/upgrade, selected-process attribution, real Discord startup on those
+networks, and voice/video remain pending. No previous passing HTTP or generic TUN
+test is used to claim that the reported Discord failure is resolved.
+
+The similar browser-versus-desktop symptom is documented in
+[GoodbyeDPI-Turkey issue 163](https://github.com/cagritaskn/GoodbyeDPI-Turkey/issues/163)
+and [zapret discussion 1324](https://github.com/bol-van/zapret/discussions/1324).
+Those reports motivate testing the exact updater endpoint and TLS mode; they do
+not prove the cause of this Driftnet case or justify copying another engine's flags.
 
 ## Filtered fiber / Superonline compatibility — 1.0.2
 
@@ -59,8 +83,9 @@ Native Discord application routing and actual audio/video remain separate checks
 - One Access switch backed by a live agent acknowledgment.
 - Independent website and native application rules; Discord is an optional preset,
   and neither an installed Discord app nor a remote health check is required.
-- Authenticated process ownership, exact paths/domain boundaries, and direct egress
-  for unmatched connections. LAN/loopback routes are excluded.
+- Authenticated process ownership, exact executable paths or a bounded optional
+  Windows Discord installation family, domain boundaries, and direct egress for
+  unmatched connections. LAN/loopback routes are excluded.
 - Native app reopening while the same session remains active.
 - Combined app/helper installation, rule-preserving upgrades, lease cleanup and
   clear unhealthy-state reporting after owner/helper/network loss.
@@ -69,19 +94,23 @@ Native Discord application routing and actual audio/video remain separate checks
   and no bundled private signing key or GitHub token.
 - Linux native ELF/`.desktop` selection, systemd helper and GNOME website settings.
 
-## Observed evidence
+## Historical 1.0.0–1.0.1 evidence
+
+These rows preserve the original observations and their installation limits.
+Statements about a deferred installation describe that earlier recorded stage,
+not the currently installed version or acceptance of 1.0.3.
 
 | Area | Observation | Boundary |
 | --- | --- | --- |
 | Policy, broker and optional app | Core/domain-boundary, missing Discord and independent website tests passed | Pure tests do not establish GUI or ISP behavior. |
 | C engine | Five real TCP/UDP/IPv6/lifecycle tests passed; twenty consecutive 4 MiB backpressure regressions passed previously | Local sockets are not a voice or ISP throughput test. |
-| macOS installed 1.0.0 | Package receipt and helper version verified; only Driftnet remains after migration; user reports Access works | 1.0.1 is not yet installed. |
+| macOS installed 1.0.0 | Package receipt and helper version verified; only Driftnet remains after migration; user reports Access works | At the original record, 1.0.1 had not yet been installed. |
 | macOS native routing | IPv4-only TUN matches the uplink; selected/direct ownership counters observed | One user's machine and network. |
 | macOS website routing | Actual CFNetwork selected Discord proxy and unrelated DIRECT; OS URLSession gateway returned HTTP 200 | HTTP success does not establish voice. |
 | Discord reopen | Three normal Quit/reopen cycles reached the main screen in the same continuously active 1.0.0 session | Access was never toggled; other versions/platforms require their own result. |
 | Website/bootstrap probes | Gateway/avatar/update/download HTTP 200; Windows download redirect/range HTTP 206, 65,536 bytes; selected example 200/unselected 403; no-Discord website-only and owner EOF checks passed | The downloaded Windows range was not executed by the probe. |
 | macOS cleanup/UI | Full proxy baseline restored on tested stop; corner/shadow/picker/icon, Escape, outside dismissal, single instance and separate preview About checked | No physical Windows/Linux mixed-DPI GUI evidence. |
-| macOS 1.0.1 package | Combined package, engine smoke, 29-file privacy/license scan, root-helper BOM and actual signed bytes passed | User explicitly deferred installation; the working installed app remains 1.0.0. |
+| macOS 1.0.1 package | Combined package, engine smoke, 29-file privacy/license scan, root-helper BOM and actual signed bytes passed | The user explicitly deferred installation at that recorded stage. |
 | Signed updater | Eleven integrated tests passed; production verifier accepted the actual final 1.0.1 manifest and all three complete installers; corrupted copies and version 99.0.0 relabeling were rejected; signed checksums verified too | Actual OS-approved 1.0.0→1.0.1 installation remains deferred, not inferred from cryptographic checks. |
 | Windows final installer | Full native installer/runtime/import, protected-root, selected/direct TUN, graceful/crash, repair/upgrade, legacy/current/unrelated shortcut and uninstall checks passed in [42379006434](https://github.com/ernilmz/driftnet/actions/runs/42379006434) | The four compiled payload hashes match the known-good baseline. Physical Windows 10 and voice remain separate. |
 | Linux native CI | Ubuntu package/install, systemd/TUN, selected/direct traffic, helper cleanup, GNOME PAC restoration and optimized GLib tests passed | CI runner/session evidence; not every desktop environment or compositor. |
@@ -94,7 +123,7 @@ A previous compatibility backend had working voice, but that result is not count
 for current native routing builds. See [SECURITY-REVIEW.md](SECURITY-REVIEW.md) for
 artifact/history scanning, installer findings, mitigation evidence and residual risks.
 
-## Final artifact checks
+## Historical 1.0.1 artifact checks
 
 The actual 1.0.1 Mac/Linux packages and source were inspected for private-key/token
 patterns, personal developer paths, unsafe archive paths, ownership and license
@@ -111,8 +140,10 @@ does not install software or change repository visibility.
 
 ## Remaining end-to-end observations
 
-- A real signed, OS-approved 1.0.0→1.0.1 upgrade preserving the user's rules and
-  replacing both GUI and helper. A signature unit test is not this installation.
+- Native 1.0.3 CI and an observed OS-approved upgrade preserving rules and
+  replacing both GUI and helper. Earlier signature checks are not this installation.
+- Physical Windows Discord startup and process selection on the reported
+  Superonline/Vodafone connections; the local updater HTTP 200 does not establish it.
 - Current-version Discord audio in both directions and video separately. No
   unsolicited automated calls are made.
 - Physical Windows 10 user acceptance, repeated app reopen, and mixed-DPI displays.

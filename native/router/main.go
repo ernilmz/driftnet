@@ -39,6 +39,7 @@ import (
 type App struct {
 	Path   string `json:"path"`
 	Bundle bool   `json:"bundle"`
+	Family string `json:"family,omitempty"`
 }
 type Request struct {
 	Action         string `json:"action,omitempty"`
@@ -48,10 +49,11 @@ type Request struct {
 	Apps           []App  `json:"apps"`
 }
 type Reply struct {
-	OK       bool   `json:"ok"`
-	Protocol int    `json:"protocol"`
-	Router   bool   `json:"router"`
-	Error    string `json:"error,omitempty"`
+	OK          bool   `json:"ok"`
+	Protocol    int    `json:"protocol"`
+	Router      bool   `json:"router"`
+	AppFamilies bool   `json:"app_families"`
+	Error       string `json:"error,omitempty"`
 }
 
 // Never let an IPC peer pin a privileged worker or the session mutex by
@@ -63,11 +65,23 @@ func writeJSON(w io.Writer, value any) error {
 	return json.NewEncoder(w).Encode(value)
 }
 func answer(w io.Writer, router bool, err error) error {
-	r := Reply{OK: err == nil, Protocol: 2, Router: router}
+	r := Reply{OK: err == nil, Protocol: 2, Router: router, AppFamilies: os.PathSeparator == '\\'}
 	if err != nil {
 		r.Error = err.Error()
 	}
 	return writeJSON(w, r)
+}
+
+// Rust canonicalize uses extended-length Windows paths while Windows process
+// metadata normally uses DOS paths. Match both using the same DOS/UNC spelling.
+func normalizeAppPath(path string) string {
+	if os.PathSeparator == '\\' {
+		if strings.HasPrefix(strings.ToUpper(path), `\\?\UNC\`) {
+			return `\\` + path[8:]
+		}
+		path = strings.TrimPrefix(path, `\\?\`)
+	}
+	return filepath.Clean(path)
 }
 func appPatterns(apps []App) ([]string, error) {
 	if len(apps) > 128 {
@@ -82,9 +96,22 @@ func appPatterns(apps []App) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Selected application is unavailable: %w", err)
 		}
+		path = normalizeAppPath(path)
 		stat, err := os.Stat(path)
 		if err != nil {
 			return nil, err
+		}
+		if app.Family != "" {
+			if os.PathSeparator != '\\' || app.Family != "discord" || app.Bundle || !stat.IsDir() || !strings.EqualFold(filepath.Base(path), "Discord") {
+				return nil, errors.New("Invalid application family")
+			}
+			// A family is anchored to one real install directory, never a
+			// basename or an unbounded parent/recursive executable wildcard.
+			if !strings.EqualFold(normalizeAppPath(filepath.Clean(app.Path)), path) {
+				return nil, errors.New("Application family root cannot be redirected")
+			}
+			patterns = append(patterns, "(?i)^"+regexp.QuoteMeta(path+string(os.PathSeparator))+`(?:Update\.exe|app-[0-9]+(?:\.[0-9]+)*\\Discord\.exe)$`)
+			continue
 		}
 		if app.Bundle {
 			if !stat.IsDir() || !strings.HasSuffix(path, ".app") {

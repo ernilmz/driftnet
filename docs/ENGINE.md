@@ -1,6 +1,6 @@
 # Networking architecture
 
-Driftnet 1.0.2 consists of a shared Rust policy and Tauri interface, an unprivileged
+Driftnet 1.0.3 consists of a shared Rust policy and Tauri interface, an unprivileged
 session agent, a local TCP/UDP engine, and an installed native routing helper.
 macOS uses a LaunchDaemon, Windows a service, and Linux a systemd service. No remote
 VPN endpoint is involved.
@@ -17,15 +17,29 @@ for process ownership.
 | Platform | Identity and installation |
 | --- | --- |
 | macOS | Canonical application bundle/executable; local peer uid; installed LaunchDaemon. The Darwin finder checks delegated process uid before using its executable path. |
-| Windows | Exact executable path, socket owner and token SID; authenticated named pipe; installed service and Wintun. |
+| Windows | Normalized canonical executable path, socket owner and token SID; authenticated named pipe; installed service and Wintun. The optional Discord preset has a bounded installation family. |
 | Linux | Canonical native ELF executable, optionally resolved from a `.desktop` file; local peer credentials; installed systemd helper. Flatpak, Snap, AppImage and script launchers are rejected rather than given an overbroad identity. |
 
-The optional Discord preset looks up an installed application when present. Its
-absence does not prevent website-only Access. Native routing does not depend on
-proxy launch arguments; the selected executable can close and reopen while the
-same lease stays active. A moved executable or changed versioned install path can
-require reselecting the app. Protected processes and incomplete metadata may remain
-direct, rather than broadening the selected rule.
+The optional Discord preset looks up an installation when present. Its absence
+does not prevent website-only Access. On Windows it selects only `Update.exe`
+and `app-<numeric version>/Discord.exe` beneath one canonical Discord installation
+root. The pattern also covers a new numeric version directory created while the
+same Access lease remains active. It does not match every executable under that
+root, a same-named app elsewhere, or a child junction that resolves outside it.
+Custom application rules retain exact executable matching; a moved custom app
+can require reselecting it. Authenticated socket-owner SID checks still apply to
+both exact and Discord-family rules.
+
+Windows 1.0.3 normalizes Rust's extended-length `\\?\` canonical paths and DOS/UNC
+process paths to one spelling before matching. Reparse points are resolved before
+process selection. The previous mismatch could leave an intended app on direct
+egress even though the separate website PAC path worked. These changes address
+routing identity; they do not establish that an ISP accepts the resulting TLS
+traffic. Native 1.0.3 acceptance is pending.
+
+Native routing does not depend on proxy launch arguments; a selected executable
+can close and reopen while its lease stays active. Protected processes and
+incomplete metadata may remain direct, rather than broadening the selected rule.
 
 Public traffic enters the local TUN for classification. Unselected traffic therefore
 still crosses a local stack before direct egress; this is not a claim of zero local
@@ -97,6 +111,14 @@ method is cached by destination IP and port, not hostname. DoH allows eight
 seconds to connect and ten seconds per request to accommodate these attempts.
 Successful initial connections keep the original method. UDP continues to use
 SOCKS5 association and datagram relay, with no new UDP fake-packet options.
+
+The ClientHello replay guard is not limited to TLS 1.3: a complete single TLS 1.2
+ClientHello record is eligible too. The pinned engine compares session IDs only
+when ServerHello includes the TLS 1.3 `supported_versions` extension; a new TLS 1.2
+session ID alone is not an error. Disabling TLS 1.2 is not part of this follow-up.
+A local public Discord updater-manifest request returned HTTP 200 with both normal
+TLS negotiation and forced TLS 1.2. This is endpoint evidence on that local
+connection, not a Windows process-attribution or Superonline/Vodafone result.
 
 The native integration refuses reconnecting buffered HTTP requests or TLS
 early/application data. Only a complete single ClientHello record is replayable;

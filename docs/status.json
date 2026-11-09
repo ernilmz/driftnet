@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "product": "Driftnet",
   "repository": "ernilmz/driftnet",
   "application_identifier": "app.drift.desktop",
@@ -101,6 +101,13 @@
     "corresponding_source_1_0_2": {
       "sha256": "35fdc860d113c59a7e0ecc69b69ac59829d42e915179388c2df03c87d4f838a9",
       "byte_identical_to": "1.0.1_source_with_recorded_four_target_offline_builds"
+    },
+    "windows_app_attribution_1_0_3": {
+      "change": "canonical_DOS_and_extended_path_equivalence; bounded_Discord_updater_and_numeric_app_version_family; same_session_updates; owner_SID_and_canonical_reparse_path_enforced",
+      "local": "Rust_workspace_and_clippy_passed; Windows_Rust_and_Go_cross_compile_passed",
+      "native_CI": "pending",
+      "real_updater_manifest": "HTTP200_default_and_forced_TLS1_2_on_local_probe; native_Windows_pending",
+      "physical_Superonline_Vodafone_Windows": "not_available_here; provider_acceptance_required"
     }
   },
   "production_publisher_signing": {
@@ -123,5 +130,6 @@
     "Driftnet-1.0.2-Setup.exe": "bae374364cd259cccffdb5f48ea05f38e64cc00c3d8cdac31d6d174559e89366",
     "Driftnet-1.0.2-linux-amd64.deb": "d44d2a5031fdda0bb10f608b655241e0fe2ca6eb6351f3b099643eb242218b56",
     "Driftnet-1.0.2-Router-Source.tar.gz": "35fdc860d113c59a7e0ecc69b69ac59829d42e915179388c2df03c87d4f838a9"
-  }
+  },
+  "release": "1.0.3_pending_native_CI_and_signing"
 }

@@ -120,6 +120,21 @@ forces a sign-in.
 
 ## Verification status
 
+The **1.0.3 follow-up is in progress**. It corrects Windows canonical-path matching
+and expands only the optional Discord installation rule to its updater and numeric
+version directories, so a newly installed Discord version can remain selected
+within the same Access session. Process SID checks and installation boundaries
+remain required; custom apps continue to match exact executables.
+
+This follows a Windows 1.0.2 user report of Discord staying on **Checking for
+Updates** on Superonline/Vodafone while websites worked. A local public manifest
+request returned HTTP 200 with both normal TLS negotiation and forced TLS 1.2;
+that probe does not establish Windows routing or compatibility on either provider.
+Native 1.0.3 CI and affected-device acceptance have not run yet. No current-version
+voice/video result is claimed.
+
+### Earlier release evidence
+
 Version **1.0.2** adds encrypted DNS through the local engine and bounded TLS
 compatibility fallback, including an additional Windows method for filtered fiber
 connections. All four jobs in [checks 42710358310](https://github.com/ernilmz/driftnet/actions/runs/42710358310)
@@ -132,13 +147,13 @@ updater, GLib safety backport and the fixed Go networking dependency. Detailed
 results and limits are recorded in [ACCEPTANCE.md](docs/ACCEPTANCE.md) and the
 [security review](docs/SECURITY-REVIEW.md).
 
-- macOS: the installed 1.0.0 build passed native routing, actual OS website proxy
-  selection, migration and three Discord quit/reopen cycles in one Access session.
-  The 1.0.1 package passed its engine smoke, privacy/license and signed-byte checks.
-  The user will test this upgrade later; it has not been installed locally.
+- Historical macOS 1.0.0 evidence: native routing, actual OS website proxy
+  selection, migration and three Discord quit/reopen cycles in one Access session
+  passed. The 1.0.1 package passed engine smoke, privacy/license and signed-byte
+  checks; installation was deferred at that recorded stage.
 - Ubuntu 24.04: native CI passed build/package, systemd/TUN routing, GNOME PAC
   restoration and optimized GLib regression tests. macOS native CI also passed.
-- Windows: the final installer passed native installation, protected service
+- Historical Windows 1.0.1 evidence: the final installer passed native installation, protected service
   paths, selected/direct TUN traffic, graceful/crash cleanup, upgrade/shortcut
   handling and uninstall in [run 42379006434](https://github.com/ernilmz/driftnet/actions/runs/42379006434).
   Its four compiled payloads match the tested baseline byte for byte.
