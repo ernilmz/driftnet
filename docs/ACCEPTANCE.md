@@ -38,6 +38,13 @@ patterns. Filesystem access runs as the verified user; privileged routing starts
 after reversion. Physical Discord startup on the reported networks and voice/video
 remain pending. These results do not establish provider-wide compatibility.
 
+All twelve published 1.0.3 assets were downloaded without authentication and
+matched the staged SHA-256 values. The production updater verifier accepted the
+public manifest, all three full installers and signed checksum list, while
+rejecting corruption and version relabeling. The production latest-release feed
+served the expected 1.0.3 manifest and signature. No local Mac installation was
+performed during this follow-up.
+
 The similar browser-versus-desktop symptom is documented in
 [GoodbyeDPI-Turkey issue 163](https://github.com/cagritaskn/GoodbyeDPI-Turkey/issues/163)
 and [zapret discussion 1324](https://github.com/bol-van/zapret/discussions/1324).

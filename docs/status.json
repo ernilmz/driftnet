@@ -132,7 +132,12 @@
   "acceptance_record": "docs/ACCEPTANCE.md",
   "publication": {
     "public_release_authorized": true,
-    "policy": "publish_verified_artifacts_only_no_automatic_local_installation"
+    "policy": "publish_verified_artifacts_only_no_automatic_local_installation",
+    "latest_tag": "v1.0.3",
+    "url": "https://github.com/ernilmz/driftnet/releases/tag/v1.0.3",
+    "all12_assets_anonymous_download_sha256_verified": true,
+    "production_latest_json_and_signature_match": true,
+    "no_local_installation_performed": true
   },
   "artifact_bytes": {
     "Driftnet-1.0.3-macOS.pkg": 24445119,
@@ -146,5 +151,5 @@
     "Driftnet-1.0.3-linux-amd64.deb": "948fc01fc73547a53f4a4bd61e4c9110d3ae866425545f4e73eafea7fe964ddb",
     "Driftnet-1.0.3-Router-Source.tar.gz": "10733f50dbc9da43d6b2a87d5a8ebdf4494f60f6ef4d1a6eff40805f43f6c910"
   },
-  "release": "1.0.3_signed_native_CI_verified"
+  "release": "1.0.3_public_latest_all12_anonymous_downloads_and_signatures_verified"
 }
