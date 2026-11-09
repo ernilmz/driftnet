@@ -78,7 +78,11 @@ fn server_hello() -> Vec<u8> {
     body.extend_from_slice(&[0x44; 32]);
     body.push(32);
     body.extend_from_slice(&[0x33; 32]);
-    body.extend_from_slice(&[0x13, 1, 0, 0, 6, 0, 43, 0, 2, 3, 4]);
+    body.extend_from_slice(&[0x13, 1, 0]);
+    let mut extensions = vec![0, 43, 0, 2, 3, 4, 0, 51, 0, 36, 0, 29, 0, 32];
+    extensions.extend_from_slice(&[0x22; 32]);
+    body.extend_from_slice(&(extensions.len() as u16).to_be_bytes());
+    body.extend(extensions);
     tls_record(2, &body)
 }
 

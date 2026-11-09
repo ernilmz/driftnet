@@ -1,10 +1,30 @@
 # Acceptance record
 
-Release target: **1.0.1**. Updated: **10 November 2026**.
+Release target: **1.0.2**. Updated: **10 November 2026**.
 
 The release rows below retain the **7 November** evidence and its installation
 limits. The follow-up below records the later Vodafone compatibility work
 separately. This record separates observed results from remaining acceptance.
+
+## Filtered fiber / Superonline compatibility — 1.0.2
+
+The new engine keeps its existing successful method and adds bounded TLS-only
+fallback, including a Windows SNI disorder method and a final method without TLS
+record splitting. No physical Superonline uplink is available here; provider
+acceptance and Windows 10/11 Discord voice/video remain user checks.
+
+Local macOS workspace tests and clippy passed. All eight compiled-engine socket
+tests passed, including the complete fallback chain/warm cache, silent TLS
+timeout, no HTTP POST or buffered early-data replay, TCP backpressure, UDP, IPv6
+and owner cleanup. The public endpoint probe passed Discord gateway, avatar,
+update and website HTTP 200, the Windows installer redirect/range HTTP 206 with
+65,536 bytes, selected/unselected site policy, PAC boundaries, owner EOF and
+website-only operation. The probe did not acquire an OS routing/proxy/DNS lease.
+
+Native Windows, macOS and Ubuntu follow-up runs are tracked in
+[checks 42710358310](https://github.com/ernilmz/driftnet/actions/runs/42710358310).
+Their results must be checked before final installer publication. Earlier 1.0.1
+package and installer results below remain historical evidence for those bytes.
 
 ## Vodafone DNS compatibility follow-up — 10 November 2026
 

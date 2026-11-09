@@ -1,6 +1,6 @@
 # Networking architecture
 
-Driftnet 1.0.1 consists of a shared Rust policy and Tauri interface, an unprivileged
+Driftnet 1.0.2 consists of a shared Rust policy and Tauri interface, an unprivileged
 session agent, a local TCP/UDP engine, and an installed native routing helper.
 macOS uses a LaunchDaemon, Windows a service, and Linux a systemd service. No remote
 VPN endpoint is involved.
@@ -83,8 +83,36 @@ and Driftnet does not decrypt TLS.
 
 The C helper incorporates ByeDPI 17.3, pinned to
 `e2684772fbda45f2ff4fc220922a010370534216`. Original vendored source is verified before
-documented changes are applied to a temporary build copy. The current TCP profile
-uses `--split 2 --tlsrec 1+s`; UDP uses SOCKS5 association and datagram relay.
+documented changes are applied to a temporary build copy. The first TCP method
+remains `--split 2 --tlsrec 1+s`. Initial TLS failures automatically try:
+
+1. SNI splitting: `--split 1+s --tlsrec 3+s`.
+2. On Windows, SNI disorder: `--split 1+s --disorder 3+s --tlsrec 3+s`.
+3. TCP-only SNI splitting: `--split 1+s`, without TLS record splitting.
+
+Fallback groups use `--auto=torst,ssl_err --proto tls`. The portable
+`--tls-timeout 1.5:1:4096` bounds a silent initial TLS response; every group sets
+`--cache-ttl 300` explicitly because group options do not inherit. The learned
+method is cached by destination IP and port, not hostname. DoH allows eight
+seconds to connect and ten seconds per request to accommodate these attempts.
+Successful initial connections keep the original method. UDP continues to use
+SOCKS5 association and datagram relay, with no new UDP fake-packet options.
+
+The native integration refuses reconnecting buffered HTTP requests or TLS
+early/application data. Only a complete single ClientHello record is replayable;
+partial handshakes, coalesced records and additional buffered data fail closed.
+This guard is in the temporary source patch and original wrapper, not a change
+to the checksum-pinned vendor files.
+
+The [pinned ByeDPI parser](https://github.com/hufrea/byedpi/blob/e2684772fbda45f2ff4fc220922a010370534216/main.c)
+and [retry/cache implementation](https://github.com/hufrea/byedpi/blob/e2684772fbda45f2ff4fc220922a010370534216/extend.c)
+define the actual options. Superonline-oriented methods also appear in
+[ByeDPI Android presets](https://github.com/barkeser2002/BarisKeser-ByeDPI/blob/master/app/src/main/res/values/arrays.xml)
+and [GoodbyeDPI-Turkey Windows alternatives](https://github.com/cagritaskn/GoodbyeDPI-Turkey/tree/master/windows).
+GoodbyeDPI/WinDivert flags cannot be copied into this engine unchanged. The
+Windows disorder method temporarily changes the outbound socket's TTL internally;
+it does not change the machine's global TTL, DNS settings or routing scope.
+There is no physical Superonline line in the current validation environment.
 These capabilities do not prove compatibility with every ISP, voice service or QUIC
 connection. Real voice and video require their own end-to-end checks.
 
@@ -96,7 +124,9 @@ healthy. Reconnect after changing networks.
 The short-send correction preserves the partially unsent buffer tail under
 backpressure. The regression transfers a deterministic 4 MiB payload through a
 slow receiver. Socket tests also cover UDP echo, IPv6 TCP, listener cleanup and
-abrupt owner exit; these are local transport checks, not ISP throughput results.
+abrupt owner exit. Additional real-engine regressions force the complete TLS
+fallback chain and its warm cache, a silent handshake timeout, and absence of
+HTTP POST/early-data replay. These are local transport checks, not ISP throughput results.
 
 ## Ownership, cleanup and installation
 
